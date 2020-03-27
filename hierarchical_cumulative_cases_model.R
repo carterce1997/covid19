@@ -12,8 +12,8 @@ rstan_options(auto_write = TRUE)
 
 region <- 'NY'
 
-cumulative_model <-
-  stan_model('stan/cumulative_model.stan')
+hierarchical_cumulative_model <-
+  stan_model('stan/hierarchical_cumulative_model.stan')
 
 get_covid_data <- function() {
   
@@ -72,7 +72,7 @@ stan_data <-
   compose_data()
 
 fit <-
-  sampling(cumulative_model, data = stan_data, chains = 1, iter = 4000)
+  sampling(hierarchical_cumulative_model, data = stan_data, chains = 1, iter = 2000)
 
 
 trace <-
