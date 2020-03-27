@@ -10,8 +10,8 @@ library(patchwork)
 
 rstan_options(auto_write = TRUE)
 
-hierarchical_cumulative_model <-
-  stan_model('stan/hierarchical_cumulative_model.stan')
+hierarchical_daily_model <-
+  stan_model('stan/hierarchical_daily_model.stan')
 
 get_covid_data <- function() {
   
@@ -56,16 +56,11 @@ covid_data <-
 
 clean_covid_data <-
   covid_data %>% 
-  arrange(Date) %>% 
-  group_by(Region) %>% 
-  mutate(
-    DaysOut = as.numeric(difftime(Date, Sys.Date(), units = 'days')),
-    cumu_n = cumsum(n)
-  ) %>% 
-  ungroup() %>% 
+  mutate(DaysOut = as.numeric(difftime(Date, Sys.Date(), units = 'days'))) %>%
+  rename(y = n) %>% 
   filter(
     DaysOut >= -14,
-    !(Date == max(Date) & n == 0)
+    !(Date == max(Date) & y == 0)
   )
 
 stan_data <-
@@ -73,7 +68,7 @@ stan_data <-
   compose_data()
 
 fit <-
-  sampling(hierarchical_cumulative_model, data = stan_data, chains = 1, iter = 2000)
+  sampling(hierarchical_daily_model, data = stan_data, chains = 1, iter = 2000)
 
 trace <-
   fit %>% 
@@ -111,18 +106,6 @@ flatness <-
   theme_minimal() +
   theme(aspect.ratio = 2) +
   ggtitle('Curve Flatness')
-
-runthrough <-
-  trace %>% 
-  ungroup() %>% 
-  mutate(PercentRunthrough = 1 / (1 + exp(m / s))) %>% 
-  mutate(Region = fct_reorder(Region, -PercentRunthrough)) %>% 
-  ggplot(aes(x = PercentRunthrough, y = Region)) +
-  stat_pointintervalh() +
-  xlim(0, 1) +
-  theme_minimal() +
-  theme(aspect.ratio = 2) +
-  ggtitle('Percent Runthrough')
 
 inflection + total_cases + flatness + plot_layout(nrow = 1)
 
