@@ -65,7 +65,10 @@ clean_covid_data <-
     cumu_n = cumsum(n)
   ) %>% 
   ungroup() %>% 
-  filter(DaysOut >= -14)
+  filter(
+    DaysOut >= -14,
+    !(Date == max(Date) & n == 0)
+  )
 
 stan_data <-
   clean_covid_data %>% 
@@ -74,51 +77,56 @@ stan_data <-
 fit <-
   sampling(hierarchical_cumulative_model, data = stan_data, chains = 1, iter = 2000)
 
-
 trace <-
-  spread_draws(fit, A, m, s, phi) %>% 
-  filter(A <= quantile(A, .9))
+  fit %>% 
+  recover_types(clean_covid_data) %>% 
+  spread_draws(A[Region], m[Region], s[Region], phi) 
 
-
-predictions <-
-  merge(
-    trace,
-    data.frame(expand.grid(t = seq(-14, 14)))
-  ) %>% 
-  mutate(
-    mu_pred = A  / (1 + exp(-(t - m) / s))
-  )
-
-curves <-
-  ggplot() +
-  geom_line(aes(x = t, y = mu_pred, group = .draw), data = predictions, alpha = .01) +
-  geom_line(aes(x = DaysOut, y = cumu_n), data = ny_covid_data, stat = 'identity', color = 'red', size = 1) +
-  xlim(-14, 14) +
-  ylim(0, max(trace$A)) +
-  ggtitle('Cumulative Cases Prediction')
-
-p <- .5
-inflection_estimate <-
+inflection <-
   trace %>% 
-  ggplot() +
-  geom_histogram(aes(x = m + s * log(p / (1 - p))), bins = 100) +
-  geom_vline(aes(xintercept = median(m + s * log(p / (1 - p))))) +
-  xlim(-14, 14) +
-  ggtitle('Inflection Point Estimate')
+  ungroup() %>% 
+  mutate(Region = fct_reorder(Region, m)) %>% 
+  ggplot(aes(x = m, y = Region)) +
+  stat_pointintervalh() +
+  geom_vline(xintercept = 0) +
+  theme_minimal() +
+  theme(aspect.ratio = 2) +
+  ggtitle('Estimated Days Until Inflection')
 
-total_cases_estimate <-
+total_cases <-
   trace %>% 
-  ggplot() +
-  geom_histogram(aes(x = A), bins = 50) +
-  geom_vline(aes(xintercept = median(A))) +
-  xlim(0, max(trace$A)) +
-  coord_flip() +
-  ggtitle('Total Cases Estimate')
+  ungroup() %>% 
+  mutate(Region = fct_reorder(Region, A)) %>% 
+  ggplot(aes(x = A, y = Region)) +
+  stat_pointintervalh() +
+  scale_x_log10() +
+  theme_minimal() +
+  theme(aspect.ratio = 2) +
+  ggtitle('Estimated Total Cases Over\nWhole Couse of Outbreak')
 
-curves + 
-  total_cases_estimate + 
-  inflection_estimate + 
-  plot_spacer() +
-  plot_layout(ncol = 2, widths = c(3, 1, 3, 1))
+flatness <-
+  trace %>% 
+  ungroup() %>% 
+  mutate(Region = fct_reorder(Region, s)) %>% 
+  ggplot(aes(x = s, y = Region)) +
+  stat_pointintervalh() +
+  theme_minimal() +
+  theme(aspect.ratio = 2) +
+  ggtitle('Curve Flatness')
+
+runthrough <-
+  trace %>% 
+  ungroup() %>% 
+  mutate(PercentRunthrough = 1 / (1 + exp(m / s))) %>% 
+  mutate(Region = fct_reorder(Region, -PercentRunthrough)) %>% 
+  ggplot(aes(x = PercentRunthrough, y = Region)) +
+  stat_pointintervalh() +
+  xlim(0, 1) +
+  theme_minimal() +
+  theme(aspect.ratio = 2) +
+  ggtitle('Percent Runthrough')
+
+inflection + total_cases + flatness + plot_layout(nrow = 1)
+
 
 

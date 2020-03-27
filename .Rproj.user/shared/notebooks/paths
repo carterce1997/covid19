@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 C:/Users/ccarte10/Desktop/covid19/cumulative_cases_model.R="42FA6F15"
 C:/Users/ccarte10/Desktop/covid19/hierarchical_cumulative_cases_model.R="4D6A4EEB"
 C:/Users/ccarte10/Desktop/covid19/poisson_cumulative_cases_model.R="BA9E7F16"
@@ -6,3 +7,7 @@ C:/Users/ccarte10/Desktop/covid19/stan/hierarchical_cumulative_model.R="B723E733
 C:/Users/ccarte10/Desktop/covid19/stan/hierarchical_cumulative_model.stan="DBEEA80E"
 C:/Users/ccarte10/Desktop/covid19/stan/poisson_cumulative_model.stan="C5E3301D"
 C:/Users/ccarte10/Desktop/covid19/usa_cumulative_cases_model.R="DC654E6"
+=======
+C:/Users/carte/Desktop/covid19/cumulative_cases_model.R="8D28A4E4"
+C:/Users/carte/Desktop/covid19/stan/cumulative_model.stan="5FD3FD3F"
+>>>>>>> 231ff7a245b7672ef80005952eaf8f821423eb98

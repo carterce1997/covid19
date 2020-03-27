@@ -38,7 +38,7 @@ transformed parameters {
 
 model {
   
-  m_mu ~ cauchy(0, 10);
+  m_mu ~ cauchy(7, 10);
   m_sigma ~ cauchy(0, 10);
   
   m ~ normal(m_mu, m_sigma);
