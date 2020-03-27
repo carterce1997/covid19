@@ -1,5 +1,6 @@
 
 
+
 library(rstan)
 library(tidyverse)
 library(rvest)
@@ -55,23 +56,20 @@ get_covid_data <- function() {
 covid_data <-
   get_covid_data()
 
-ny_covid_data <-
+clean_covid_data <-
   covid_data %>% 
-  filter(Region == region) %>% 
   arrange(Date) %>% 
+  group_by(Region) %>% 
   mutate(
     DaysOut = as.numeric(difftime(Date, Sys.Date(), units = 'days')),
     cumu_n = cumsum(n)
   ) %>% 
+  ungroup() %>% 
   filter(DaysOut >= -14)
 
-
 stan_data <-
-  list(
-    n = nrow(ny_covid_data),
-    t = ny_covid_data$DaysOut,
-    cumu_y = ny_covid_data$cumu_n
-  )
+  clean_covid_data %>% 
+  compose_data()
 
 fit <-
   sampling(cumulative_model, data = stan_data, chains = 1, iter = 4000)
