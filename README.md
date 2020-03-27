@@ -1,6 +1,9 @@
 # covid19
 
 Goals
- - Provide a robust data collection system
- - Predict number of cases, when, where
- - Quantify outcomes
+ 1. Provide a robust data collection system
+ 2. Predict number of cases, when, where
+
+Latest Predictions
+
+![Updated 2020-03-27](doc/national_predictions_2020-03-27.png)

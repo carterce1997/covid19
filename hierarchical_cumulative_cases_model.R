@@ -12,8 +12,8 @@ rstan_options(auto_write = TRUE)
 
 region <- 'NY'
 
-cumulative_model <-
-  stan_model('stan/cumulative_model.stan')
+hierarchical_cumulative_model <-
+  stan_model('stan/hierarchical_cumulative_model.stan')
 
 get_covid_data <- function() {
   
@@ -65,11 +65,68 @@ clean_covid_data <-
     cumu_n = cumsum(n)
   ) %>% 
   ungroup() %>% 
-  filter(DaysOut >= -14)
+  filter(
+    DaysOut >= -14,
+    !(Date == max(Date) & n == 0)
+  )
 
 stan_data <-
   clean_covid_data %>% 
   compose_data()
 
 fit <-
-  sampling(hierarchical_cumulative_model, data = stan_data, chains = 1, iter = 4000)
+  sampling(hierarchical_cumulative_model, data = stan_data, chains = 1, iter = 2000)
+
+trace <-
+  fit %>% 
+  recover_types(clean_covid_data) %>% 
+  spread_draws(A[Region], m[Region], s[Region], phi) 
+
+inflection <-
+  trace %>% 
+  ungroup() %>% 
+  mutate(Region = fct_reorder(Region, m)) %>% 
+  ggplot(aes(x = m, y = Region)) +
+  stat_pointintervalh() +
+  geom_vline(xintercept = 0) +
+  theme_minimal() +
+  theme(aspect.ratio = 2) +
+  ggtitle('Estimated Days Until Inflection')
+
+total_cases <-
+  trace %>% 
+  ungroup() %>% 
+  mutate(Region = fct_reorder(Region, A)) %>% 
+  ggplot(aes(x = A, y = Region)) +
+  stat_pointintervalh() +
+  scale_x_log10() +
+  theme_minimal() +
+  theme(aspect.ratio = 2) +
+  ggtitle('Estimated Total Cases Over\nWhole Couse of Outbreak')
+
+flatness <-
+  trace %>% 
+  ungroup() %>% 
+  mutate(Region = fct_reorder(Region, s)) %>% 
+  ggplot(aes(x = s, y = Region)) +
+  stat_pointintervalh() +
+  theme_minimal() +
+  theme(aspect.ratio = 2) +
+  ggtitle('Curve Flatness')
+
+runthrough <-
+  trace %>% 
+  ungroup() %>% 
+  mutate(PercentRunthrough = 1 / (1 + exp(m / s))) %>% 
+  mutate(Region = fct_reorder(Region, -PercentRunthrough)) %>% 
+  ggplot(aes(x = PercentRunthrough, y = Region)) +
+  stat_pointintervalh() +
+  xlim(0, 1) +
+  theme_minimal() +
+  theme(aspect.ratio = 2) +
+  ggtitle('Percent Runthrough')
+
+inflection + total_cases + flatness + plot_layout(nrow = 1)
+
+
+
