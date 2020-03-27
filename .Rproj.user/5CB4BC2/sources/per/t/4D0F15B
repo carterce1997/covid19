@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1585266269116.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3116039580",
+    "id" : "4D0F15B",
+    "lastKnownWriteTime" : 1585267600,
+    "last_content_update" : 1585267600953,
+    "path" : "C:/Users/carte/Desktop/covid19/stan/cumulative_model.stan",
+    "project_path" : "stan/cumulative_model.stan",
+    "properties" : {
+        "cursorPosition" : "32,21",
+        "scrollLine" : "8"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "stan"
+}

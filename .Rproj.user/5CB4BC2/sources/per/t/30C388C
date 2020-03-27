@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1584833722152.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2723811307",
+    "id" : "30C388C",
+    "lastKnownWriteTime" : 1584893833,
+    "last_content_update" : 1584893833089,
+    "path" : "C:/Users/carte/Desktop/covid19/app.R",
+    "project_path" : "app.R",
+    "properties" : {
+        "cursorPosition" : "142,53",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1585254385829.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "997851490",
+    "id" : "8267E4E",
+    "lastKnownWriteTime" : 1585267711,
+    "last_content_update" : 1585267711229,
+    "path" : "C:/Users/carte/Desktop/covid19/cumulative_cases_model.R",
+    "project_path" : "cumulative_cases_model.R",
+    "properties" : {
+        "cursorPosition" : "124,0",
+        "scrollLine" : "100",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
