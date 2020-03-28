@@ -1,12 +1,10 @@
 
-
-
 data {
   int n;
   int n_Region;
   int Region[n];
   real DaysOut[n];
-  int cumu_n[n];
+  int y[n];
 }
 
 parameters {
@@ -30,7 +28,7 @@ transformed parameters {
   
   for (i in 1:n) {
     
-    mu[i] = A[Region[i]] / (1 + exp(- (DaysOut[i] - m[Region[i]]) / s[Region[i]]));
+    mu[i] = A[Region[i]] * exp(- (DaysOut[i] - m[Region[i]]) / s[Region[i]]) / (1 + exp(- (DaysOut[i] - m[Region[i]]) / s[Region[i]])) ^ 2;
     
   }
   
@@ -38,15 +36,15 @@ transformed parameters {
 
 model {
   
-  m_mu ~ cauchy(7, 10);
+  m_mu ~ cauchy(0, 10);
   m_sigma ~ cauchy(0, 10);
   
   m ~ normal(m_mu, m_sigma);
   s ~ cauchy(s_mu, s_sigma);
-  A ~ cauchy(0, 20);
-  phi ~ cauchy(0, 1);
+  A ~ cauchy(0, 10);
+  phi ~ cauchy(0, 10);
   
   for (i in 1:n)
-    target += neg_binomial_2_lpmf(cumu_n[i] | mu[i], phi[Region[i]]);
-
+    target += neg_binomial_2_lpmf(y[i] | mu[i], phi[Region[i]]);
+    
 }
