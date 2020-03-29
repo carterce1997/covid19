@@ -5,9 +5,9 @@ account: christophercarter
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1975863
-bundleId: 2908784
+bundleId: 2939948
 url: https://christophercarter.shinyapps.io/covid19/
-when: 1584893870.86375
+when: 1585499136.72528
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: covid.R|eda.R|rsconnect.R
+ignoredFiles: rsconnect.R
