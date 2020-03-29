@@ -1,14 +1,9 @@
-<<<<<<< HEAD
+C:/Users/carte/Desktop/covid19/README.md="116A5CDA"
 C:/Users/carte/Desktop/covid19/cumulative_cases_model.R="8D28A4E4"
+C:/Users/carte/Desktop/covid19/hierarchical_cumulative_cases_model.R="B26351E6"
+C:/Users/carte/Desktop/covid19/hierarchical_daily_cases_model.R="C9218B9F"
+C:/Users/carte/Desktop/covid19/phase_space_model.R="871CF36B"
 C:/Users/carte/Desktop/covid19/stan/cumulative_model.stan="5FD3FD3F"
 C:/Users/carte/Desktop/covid19/stan/hierarchical_cumulative_model.stan="D3983DBC"
-=======
-C:/Users/ccarte10/Desktop/covid19/cumulative_cases_model.R="42FA6F15"
-C:/Users/ccarte10/Desktop/covid19/hierarchical_cumulative_cases_model.R="4D6A4EEB"
-C:/Users/ccarte10/Desktop/covid19/hierarchical_daily_cases_model.R="10E0ECB2"
-C:/Users/ccarte10/Desktop/covid19/stan/cumulative_model.stan="994CAFE2"
-C:/Users/ccarte10/Desktop/covid19/stan/hierarchical_cumulative_model.stan="DBEEA80E"
-C:/Users/ccarte10/Desktop/covid19/stan/hierarchical_daily_model.rds="8515F239"
-C:/Users/ccarte10/Desktop/covid19/stan/hierarchical_daily_model.stan="35A08269"
-C:/Users/ccarte10/Desktop/covid19/usa_cumulative_cases_model.R="DC654E6"
->>>>>>> 1d847beb8876d3987eb35373484ce604466ce13b
+C:/Users/carte/Desktop/covid19/stan/hierarchical_daily_model.stan="BF471A29"
+C:/Users/carte/Desktop/covid19/stan/phase_space_model.stan="E75CD34C"

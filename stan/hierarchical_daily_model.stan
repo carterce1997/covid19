@@ -36,13 +36,13 @@ transformed parameters {
 
 model {
   
-  m_mu ~ cauchy(0, 10);
-  m_sigma ~ cauchy(0, 10);
+  m_mu ~ cauchy(14, 10);
+  m_sigma ~ cauchy(0, 3);
   
   m ~ normal(m_mu, m_sigma);
   s ~ cauchy(s_mu, s_sigma);
   A ~ cauchy(0, 10);
-  phi ~ cauchy(0, 10);
+  phi ~ cauchy(0, 3);
   
   for (i in 1:n)
     target += neg_binomial_2_lpmf(y[i] | mu[i], phi[Region[i]]);
