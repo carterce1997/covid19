@@ -107,7 +107,7 @@ ui <- fluidPage(
         ),
         column(
           6,
-          plotOutput('phase_space_plot', height = '600px')
+          plotOutput('phase_space_plot', height = '300px')
         )
       ),
       width = 10
