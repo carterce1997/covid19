@@ -1,9 +1,11 @@
 
-library(rstan)
+library(rstanarm)
 library(tidybayes)
 library(rvest)
 library(tidyverse)
+library(modelr)
 library(lubridate)
+library(patchwork)
 
 phase_space_model <-
   stan_model('stan/phase_space_model.stan')
@@ -11,7 +13,7 @@ phase_space_model <-
 get_covid_data <- function() {
   
   content_url <- 
-    'http://en.wikipedia.org/wiki/Template:2019-20_coronavirus_pandemic_data/United_States_medical_cases'
+    'https://en.wikipedia.org/wiki/Template:2019-20_coronavirus_pandemic_data/United_States_medical_cases'
   
   content <-
     read_html(content_url)
@@ -41,8 +43,15 @@ get_covid_data <- function() {
       n = as.numeric(n),
       n = replace_na(n, 0)
     )
+
+  total_counts <-
+    counts %>% 
+    group_by(Date) %>% 
+    summarize(n = sum(n)) %>% 
+    ungroup() %>% 
+    mutate(Region = 'USA')
   
-  return(counts)
+  return(rbind(counts, total_counts))
   
 }
 
@@ -54,6 +63,7 @@ covid_data %>%
   arrange(Date) %>% 
   group_by(Region) %>% 
   mutate(cumu_n = cumsum(n)) %>% 
+  filter(!(Date == max(Date) & n == 0)) %>% 
   ungroup() %>% 
   ggplot() +
   geom_path(aes(x = cumu_n, y = n, group = Region)) +
@@ -62,45 +72,60 @@ covid_data %>%
   facet_wrap(~ Region) +
   theme_minimal()
 
+region = 'USA'
+
 stan_df <-
   covid_data %>% 
   arrange(Date) %>% 
   group_by(Region) %>% 
   mutate(cumu_n = cumsum(n)) %>% 
+  filter(!(Date == max(Date) & n == 0)) %>% 
   ungroup() %>% 
   filter(
-    Region == 'NY',
-    cumu_n >= 10
+    Region == region,
+    cumu_n >= 1e1
   ) %>% 
   select(
     y = n,
     cumu_y = cumu_n
   ) 
 
-stan_data <-
-  stan_df %>% 
-  compose_data()
-
-
 fit <-
-  sampling(phase_space_model, data = stan_data, chains = 1)
-
+  stan_glm(y ~ 0 + I(cumu_y) + I(cumu_y^2), data = stan_df, chains = 1)
 
 trace <-
-  spread_draws(fit, s, A)
+  spread_draws(fit, `I(cumu_y)`, `I(cumu_y^2)`) %>% 
+  rename(a = `I(cumu_y)`, b = `I(cumu_y^2)`) %>% 
+  mutate(
+    A = -a / b,
+    s = 1 / a
+  ) 
+
+pred_grid <-
+  stan_df %>% 
+  data_grid(cumu_y = seq_range(c(cumu_y, 3 * max(cumu_y)), n = 100)) %>% 
+  filter(cumu_y >= min(stan_df$cumu_y))
 
 pred <-
   trace %>% 
-  sample_n(200) %>% 
-  merge(data.frame(cumu_n = 10 ^ seq(1, 5, length.out = 100))) %>% 
-  mutate(
-    n_pred = cumu_n / s * (1 - cumu_n / A)
-  )
+  sample_n(200) %>%
+  merge(pred_grid) %>% 
+  mutate(y_pred = a * cumu_y + b * cumu_y ^ 2) %>% 
+  filter(y_pred >= 0)
 
-ggplot() +
-  geom_line(aes(x = cumu_n, y = n_pred, group = .draw), data = pred, alpha = .1) +
+curves <-
+  ggplot() +
+  geom_line(aes(x = cumu_y, y = y_pred, group = .draw), data = pred, alpha = .05) +
   geom_point(aes(x = cumu_y, y = y), data = stan_df) +
-  scale_x_log10() +
-  scale_y_log10() +
+  xlim(0, 3 * max(stan_df$cumu_y)) +
+  # scale_y_log10() +
+  # scale_x_log10() +
   theme_minimal()
 
+estimate <-
+  ggplot() +
+  geom_histogram(aes(x = A), data = pred, bins = 100) +
+  xlim(0, 3 * max(stan_df$cumu_y)) +
+  theme_minimal() 
+
+curves / estimate
