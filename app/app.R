@@ -100,6 +100,7 @@ ui <- fluidPage(
     sidebarPanel(
       selectizeInput('region', 'Region', choices = sort(unique(get_covid_cases()$Region)), selected = 'USA'),
       checkboxInput('logscale', 'Log Scale', value = FALSE),
+      checkboxInput('phase_space_logscale', 'Phase Space Log Scale', value = TRUE),
       dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 14, end = Sys.Date()),
       h4('Context'),
       div(HTML('Data from <a href="https://en.wikipedia.org/wiki/Template:2019-20_coronavirus_pandemic_data/United_States_medical_cases" target="_blank">here</a>. Confirmed medical cases only. Data is refreshed every five minutes, though most states report numbers around 4pm EST.')),
@@ -275,8 +276,8 @@ server <- function(input, output, session) {
           filter(Region == input$region, Date == max(Date)),
         hjust = -.5
       ) +
-      scale_x_log10(expand = expand_scale(mult = .1)) +
-      scale_y_log10(expand = expand_scale(mult = .1)) +
+      { if (input$phase_space_logscale) scale_x_log10(expand = expand_scale(mult = .1)) } +
+      { if (input$phase_space_logscale) scale_y_log10(expand = expand_scale(mult = .1)) } +
       scale_color_manual(values = c('TRUE' = 'black', 'FALSE' = 'gray')) +
       scale_alpha_manual(values = c('TRUE' = 1, 'FALSE' = .5)) +
       theme_minimal() +
