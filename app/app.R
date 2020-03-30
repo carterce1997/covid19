@@ -7,7 +7,7 @@ library(lubridate)
 get_covid_cases <- function() {
   
   content_url <- 
-    'https://en.wikipedia.org/wiki/Template:2019%E2%80%9320_coronavirus_pandemic_data/United_States_medical_cases'
+    'http://en.wikipedia.org/wiki/Template:2019%E2%80%9320_coronavirus_pandemic_data/United_States_medical_cases'
   
   content <-
     read_html(content_url)
@@ -38,14 +38,21 @@ get_covid_cases <- function() {
       n = replace_na(n, 0)
     )
   
-  return(counts)
+  total_counts <-
+    counts %>% 
+    group_by(Date) %>% 
+    summarize(n = sum(n)) %>% 
+    ungroup() %>% 
+    mutate(Region = 'USA')
+  
+  return(rbind(counts, total_counts))
   
 }
 
 get_covid_deaths <- function() {
   
   content_url <- 
-    'https://en.wikipedia.org/wiki/Template:2019%E2%80%9320_coronavirus_pandemic_data/United_States_medical_cases'
+    'http://en.wikipedia.org/wiki/Template:2019%E2%80%9320_coronavirus_pandemic_data/United_States_medical_cases'
   
   content <-
     read_html(content_url)
@@ -76,7 +83,14 @@ get_covid_deaths <- function() {
       n = replace_na(n, 0)
     )
   
-  return(counts)
+  total_counts <-
+    counts %>% 
+    group_by(Date) %>% 
+    summarize(n = sum(n)) %>% 
+    ungroup() %>% 
+    mutate(Region = 'USA')
+  
+  return(rbind(counts, total_counts))
   
 }
 
@@ -84,7 +98,7 @@ ui <- fluidPage(
   titlePanel('COVID-19 Cases'),
   sidebarLayout(
     sidebarPanel(
-      selectizeInput('region', 'Region', choices = sort(unique(get_covid_cases()$Region)), selected = 'NY'),
+      selectizeInput('region', 'Region', choices = sort(unique(get_covid_cases()$Region)), selected = 'USA'),
       checkboxInput('logscale', 'Log Scale', value = FALSE),
       dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 14, end = Sys.Date()),
       h4('Context'),
@@ -138,15 +152,15 @@ server <- function(input, output, session) {
         group_by(Region) %>% 
         filter(!(Date == max(Date) & n == 0)) %>% 
         ungroup()
-      
+    
     })
   
-  regions <- 
-    reactive({
-    
-      sort(unique(covid_cases()$Region))
-    
-    })
+  # regions <- 
+  #   reactive({
+  #   
+  #     sort(unique(covid_cases()$Region))
+  #   
+  #   })
   
 
   
@@ -232,28 +246,39 @@ server <- function(input, output, session) {
     
     cases <-
       covid_cases() %>% 
-      filter(Region == input$region) %>% 
       arrange(Date) %>%
+      group_by(Region) %>% 
       mutate(
-        cumu_n = cumsum(n),
-        Type = 'Cases'
-      )
-
-    # deaths <-
-    #   covid_deaths() %>% 
-    #   filter(Region == input$region) %>% 
-    #   arrange(Date) %>%
-    #   mutate(
-    #     cumu_n = cumsum(n), 
-    #     Type = 'Deaths'
-    #   )
+        cumu_n = cumsum(n)
+      ) %>% 
+      ungroup() %>% 
+      filter(cumu_n >= 10)
     
-    cases %>% 
     ggplot() +
-      geom_line(aes(x = cumu_n, y = n), stat = 'identity') +
-      scale_x_log10() +
-      scale_y_log10() +
-      # scale_color_manual(values = c('Deaths' = 'red', 'Cases' = 'black')) +
+      geom_line(
+        aes(x = cumu_n, y = n, group = Region),
+        alpha = .5,
+        color = 'gray',
+        stat = 'identity', 
+        data = cases %>% 
+          filter(Region != input$region)
+      ) +
+      geom_line(
+        aes(x = cumu_n, y = n, group = Region), 
+        stat = 'identity', 
+        data = cases %>% 
+          filter(Region == input$region)
+      ) +
+      geom_text(
+        aes(x = cumu_n, y = n, label = Region), 
+        data = cases %>% 
+          filter(Region == input$region, Date == max(Date)),
+        hjust = -.5
+      ) +
+      scale_x_log10(expand = expand_scale(mult = .1)) +
+      scale_y_log10(expand = expand_scale(mult = .1)) +
+      scale_color_manual(values = c('TRUE' = 'black', 'FALSE' = 'gray')) +
+      scale_alpha_manual(values = c('TRUE' = 1, 'FALSE' = .5)) +
       theme_minimal() +
       ggtitle('Phase Space') +
       xlab('Cumulative Cases') +
