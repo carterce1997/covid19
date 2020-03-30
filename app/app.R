@@ -135,7 +135,7 @@ server <- function(input, output, session) {
   covid_cases <- 
     reactive({
     
-      invalidateLater(millis = 5 * 60 * 1000) # five minute refresh
+      invalidateLater(millis = 30 * 60 * 1000) # 30 minute refresh
       
       get_covid_cases() %>% 
         group_by(Region) %>% 
@@ -147,7 +147,7 @@ server <- function(input, output, session) {
   covid_deaths <- 
     reactive({
       
-      invalidateLater(millis = 5 * 60 * 1000) # five minute refresh
+      invalidateLater(millis = 30 * 60 * 1000) # five minute refresh
       
       get_covid_deaths() %>% 
         group_by(Region) %>% 
