@@ -10,7 +10,14 @@ get_covid_data <- function() {
     mutate(date = ymd(date)) %>% 
     replace(is.na(.), 0)
   
-  return(results)
+  totals <-
+    results %>% 
+    group_by(date) %>% 
+    summarize_all(function(x) if( 'numeric' %in% class(x)) sum(x) else NA) %>% 
+    ungroup() %>% 
+    mutate(state = 'USA')
+  
+  return(rbind(results, totals))
   
 }
 
@@ -95,7 +102,7 @@ ui <- fluidPage(
   titlePanel('COVID-19 Dashboard'),
   sidebarLayout(
     sidebarPanel(
-      selectizeInput('state', 'State', choices = sort(unique(get_covid_data()$state)), selected = 'NY'),
+      selectizeInput('state', 'State', choices = sort(unique(get_covid_data()$state)), selected = 'USA'),
       checkboxInput('logscale', 'Log Scale', value = FALSE),
       dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 14, end = Sys.Date()),
       width = 2
