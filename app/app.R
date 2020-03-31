@@ -98,7 +98,7 @@ ui <- fluidPage(
   titlePanel('COVID-19 Cases'),
   sidebarLayout(
     sidebarPanel(
-      selectizeInput('region', 'Region', choices = sort(unique(get_covid_cases()$Region)), selected = 'USA'),
+      selectizeInput('region', 'Region', choices = sort(unique(get_covid_data()$Region)), selected = 'USA'),
       checkboxInput('logscale', 'Log Scale', value = FALSE),
       checkboxInput('phase_space_logscale', 'Phase Space Log Scale', value = TRUE),
       dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 14, end = Sys.Date()),

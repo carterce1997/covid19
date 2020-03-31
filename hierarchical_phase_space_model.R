@@ -1,4 +1,5 @@
 
+
 library(rstanarm)
 library(tidybayes)
 library(rvest)
@@ -7,12 +8,10 @@ library(modelr)
 library(lubridate)
 library(patchwork)
 
-region <- 'NY'
-
 get_covid_data <- function() {
   
   content_url <- 
-    'http://en.wikipedia.org/wiki/Template:2019-20_coronavirus_pandemic_data/United_States_medical_cases'
+    'https://en.wikipedia.org/wiki/Template:2019-20_coronavirus_pandemic_data/United_States_medical_cases'
   
   content <-
     read_html(content_url)
@@ -42,7 +41,7 @@ get_covid_data <- function() {
       n = as.numeric(n),
       n = replace_na(n, 0)
     )
-
+  
   total_counts <-
     counts %>% 
     group_by(Date) %>% 
@@ -62,7 +61,7 @@ stan_df <-
   arrange(Date) %>% 
   group_by(Region) %>% 
   mutate(cumu_n = cumsum(n)) %>% 
-  filter(!(Date == max(Date) & n == 0)) %>%
+  filter(!(Date == max(Date))) %>% 
   ungroup() %>% 
   filter(
     Region == region,
