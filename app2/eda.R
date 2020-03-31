@@ -106,5 +106,10 @@ phase_plot <-
 phase_plot
 
 
-
+covid_data %>% 
+  filter(state == 'NY') %>% 
+  filter(positive > 50, positiveIncrease > 0) %>% 
+  arrange(date) %>% 
+  mutate(growth_factor = positiveIncrease / lag(positiveIncrease)) %>% 
+  select(growth_factor)
 
