@@ -77,7 +77,7 @@ get_covid_deaths <- function() {
       Date = mdy(paste(Date, ', 2020'))
     ) %>% 
     drop_na(Date) %>% 
-    pivot_longer(AK:PA, names_to = 'Region', values_to = 'n') %>% 
+    pivot_longer(AK:RI, names_to = 'Region', values_to = 'n') %>% 
     mutate(
       n = as.numeric(n),
       n = replace_na(n, 0)

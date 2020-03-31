@@ -7,8 +7,7 @@ library(modelr)
 library(lubridate)
 library(patchwork)
 
-phase_space_model <-
-  stan_model('stan/phase_space_model.stan')
+region <- 'USA'
 
 get_covid_data <- function() {
   
@@ -58,28 +57,12 @@ get_covid_data <- function() {
 covid_data <-
   get_covid_data()
 
-
-covid_data %>% 
-  arrange(Date) %>% 
-  group_by(Region) %>% 
-  mutate(cumu_n = cumsum(n)) %>% 
-  filter(!(Date == max(Date) & n == 0)) %>% 
-  ungroup() %>% 
-  ggplot() +
-  geom_path(aes(x = cumu_n, y = n, group = Region)) +
-  scale_x_log10() +
-  scale_y_log10() +
-  facet_wrap(~ Region) +
-  theme_minimal()
-
-region = 'USA'
-
 stan_df <-
   covid_data %>% 
   arrange(Date) %>% 
   group_by(Region) %>% 
   mutate(cumu_n = cumsum(n)) %>% 
-  filter(!(Date == max(Date) & n == 0)) %>% 
+  filter(!(Date == max(Date))) %>% 
   ungroup() %>% 
   filter(
     Region == region,
@@ -91,10 +74,10 @@ stan_df <-
   ) 
 
 fit <-
-  stan_glm(y ~ 0 + I(cumu_y) + I(cumu_y^2), data = stan_df, chains = 1)
+  stan_glm(y ~ 0 + I(cumu_y) + I(cumu_y^2), data = stan_df)
 
 trace <-
-  spread_draws(fit, `I(cumu_y)`, `I(cumu_y^2)`) %>% 
+  spread_draws(fit, `I(cumu_y)`, `I(cumu_y^2)`, sigma) %>% 
   rename(a = `I(cumu_y)`, b = `I(cumu_y^2)`) %>% 
   mutate(
     A = -a / b,
@@ -103,29 +86,40 @@ trace <-
 
 pred_grid <-
   stan_df %>% 
-  data_grid(cumu_y = seq_range(c(cumu_y, 3 * max(cumu_y)), n = 100)) %>% 
+  data_grid(cumu_y = seq_range(c(cumu_y, 4 * max(cumu_y)), n = 100)) %>% 
   filter(cumu_y >= min(stan_df$cumu_y))
 
 pred <-
   trace %>% 
-  sample_n(200) %>%
   merge(pred_grid) %>% 
-  mutate(y_pred = a * cumu_y + b * cumu_y ^ 2) %>% 
-  filter(y_pred >= 0)
+  mutate(y_pred = rnorm(n(), a * cumu_y + b * cumu_y ^ 2, sigma))
+
+pred_quantile <-
+  pred %>% 
+  group_by(cumu_y) %>% 
+  summarize(
+    LowPred2 = max(quantile(y_pred, .01), 0),
+    LowPred1 = max(quantile(y_pred, .1), 0),
+    MedianPred = max(median(y_pred), 0),
+    HighPred1 = max(quantile(y_pred, .9), 0),
+    HighPred2 = max(quantile(y_pred, .99), 0)
+  ) 
 
 curves <-
   ggplot() +
-  geom_line(aes(x = cumu_y, y = y_pred, group = .draw), data = pred, alpha = .05) +
+  geom_ribbon(aes(x = cumu_y, ymin = LowPred2, ymax = HighPred2), color = 'gray', data = pred_quantile, alpha = .25) +
+  geom_ribbon(aes(x = cumu_y, ymin = LowPred1, ymax = HighPred1), color = 'gray', data = pred_quantile, alpha = .25) +
+  geom_line(aes(x = cumu_y, y = MedianPred), color = 'red', data = pred_quantile) +
   geom_point(aes(x = cumu_y, y = y), data = stan_df) +
-  xlim(0, 3 * max(stan_df$cumu_y)) +
-  # scale_y_log10() +
-  # scale_x_log10() +
+  xlim(0, 4 * max(stan_df$cumu_y)) +
   theme_minimal()
 
 estimate <-
+  pred %>% 
   ggplot() +
-  geom_histogram(aes(x = A), data = pred, bins = 100) +
-  xlim(0, 3 * max(stan_df$cumu_y)) +
+  geom_histogram(aes(x = A), bins = 200) +
+  geom_vline(aes(xintercept = median(A)), color = 'red') +
+  xlim(0, 4 * max(stan_df$cumu_y)) +
   theme_minimal() 
 
 curves / estimate
