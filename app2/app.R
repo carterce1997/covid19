@@ -2,6 +2,9 @@
 library(shiny)
 library(tidyverse)
 library(rstanarm)
+library(lubridate)
+library(tidybayes)
+library(modelr)
 
 get_covid_data <- function() {
   

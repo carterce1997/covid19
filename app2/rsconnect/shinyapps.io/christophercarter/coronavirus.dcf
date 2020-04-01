@@ -1,0 +1,13 @@
+name: coronavirus
+title: coronavirus
+username:
+account: christophercarter
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2030525
+bundleId: 2950967
+url: https://christophercarter.shinyapps.io/coronavirus/
+when: 1585688775.17198
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: eda.R
