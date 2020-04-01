@@ -1,7 +1,9 @@
 
 library(shiny)
 library(tidyverse)
-library(rstanarm)
+# library(brms)
+# library(rstanarm)
+library(arm)
 library(lubridate)
 library(tidybayes)
 library(modelr)
@@ -45,10 +47,22 @@ phase_model_chart <- function(covid_data, state_) {
     filter(state == state_)
   
   fit <-
-    stan_glm(positiveIncrease ~ 0 + I(positive) + I(positive^2), data = stan_df, chains = 1)
+    lm(positiveIncrease ~ 0 + I(positive) + I(positive^2), data = stan_df)
+  
+  samples <-
+    sim(fit, n.sims = 1e4)
   
   trace <-
-    spread_draws(fit, `I(positive)`, `I(positive^2)`, sigma) %>% 
+    samples %>% 
+    coef() %>% 
+    as.data.frame()
+  
+  trace$sigma <-
+    samples@sigma
+  
+  
+  trace <-
+    trace %>% 
     rename(a = `I(positive)`, b = `I(positive^2)`) %>% 
     mutate(
       A = -a / b,
