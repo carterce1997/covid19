@@ -121,7 +121,8 @@ ui <- fluidPage(
     sidebarPanel(
       selectizeInput('state', 'State', choices = sort(unique(get_covid_data()$state)), selected = 'USA'),
       checkboxInput('logscale', 'Log Scale', value = FALSE),
-      dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 14, end = Sys.Date()),
+      dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 30, end = Sys.Date()),
+      div(HTML('Data from <a>covidtracking.com</a>. Modeling assumes logistic growth.')),
       width = 2
     ),
     mainPanel(
