@@ -9,7 +9,7 @@ library(modelr)
 get_covid_data <- function() {
   
   results <-
-    vroom::vroom('https://covidtracking.com/api/states/daily.csv') %>% 
+    read_csv('http://covidtracking.com/api/states/daily.csv') %>% 
     mutate(date = ymd(date)) %>% 
     replace(is.na(.), 0)
   
