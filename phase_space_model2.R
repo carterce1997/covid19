@@ -1,5 +1,5 @@
 
-library(rstanarm)
+library(brms)
 library(tidybayes)
 library(rvest)
 library(tidyverse)
