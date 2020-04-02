@@ -122,11 +122,11 @@ ui <- fluidPage(
       selectizeInput('state', 'State', choices = sort(unique(get_covid_data()$state)), selected = 'USA'),
       checkboxInput('logscale', 'Log Scale', value = FALSE),
       dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 30, end = Sys.Date()),
-      div(HTML('Data from <a href="https://covidtracking.com/">covidtracking.com</a>. Modeling assumes logistic growth.')),
+      div(HTML('Data from <a target="_blank" href="https://covidtracking.com/">covidtracking.com</a>. Modeling assumes logistic growth.')),
       hr(),
-      div(HTML('If you would like to participate in this project, join the discussion on Slack <a href="https://join.slack.com/t/covid19datadi-nrv2825/shared_invite/zt-dajqaeac-nTNwKEtzkWUwqs_Y669csw">here</a>.')),
+      div(HTML('If you would like to participate in this project, join the discussion on Slack <a target="_blank" href="https://join.slack.com/t/covid19datadi-nrv2825/shared_invite/zt-dajqaeac-nTNwKEtzkWUwqs_Y669csw">here</a>.')),
       hr(),
-      div(HTML('Source code for the project can be found on Github <a href="https://github.com/carterce1997/covid19">here</a>.')),
+      div(HTML('Source code for the project can be found on Github <a target="_blank" href="https://github.com/carterce1997/covid19">here</a>.')),
       width = 2
     ),
     mainPanel(
