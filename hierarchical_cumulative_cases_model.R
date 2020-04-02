@@ -64,7 +64,7 @@ clean_covid_data <-
   ) %>% 
   ungroup() %>% 
   filter(
-    DaysOut >= -14,
+    # DaysOut >= -14,
     !(Date == max(Date) & n == 0)
   )
 
