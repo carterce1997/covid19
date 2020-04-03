@@ -48,7 +48,14 @@ get_covid_data <- function() {
       n = replace_na(n, 0)
     )
   
-  return(counts)
+  total_counts <-
+    counts %>% 
+    group_by(Date) %>% 
+    summarize(n = sum(n)) %>% 
+    ungroup() %>% 
+    mutate(Region = 'USA')
+  
+  return(rbind(counts, total_counts))
   
 }
 
@@ -67,7 +74,7 @@ ny_covid_data <-
     cumu_n = cumsum(n)
   ) %>% 
   filter(
-    DaysOut >= -14
+    DaysOut >= -21
   )
 
 
@@ -81,9 +88,8 @@ stan_data <-
 fit <-
   sampling(cumulative_model, data = stan_data, chains = 1, iter = 4000)
 
-
 trace <-
-  spread_draws(fit, A, m, s, inv_nu, phi) 
+  spread_draws(fit, A, m, s, nu, phi) 
 
 predictions <-
   merge(
@@ -91,7 +97,7 @@ predictions <-
     data.frame(expand.grid(t = seq(-14, 14)))
   ) %>% 
   mutate(
-    cumu_y_pred = rnbinom(n(), mu = A  / (1 + exp(-(t - m) / s)) ^ inv_nu, size = phi)
+    cumu_y_pred = rnbinom(n(), mu = A  / (1 + exp(-(t - m) / s)) ^ (1 / nu), size = phi)
   ) 
 
 predictions_quantile <-
@@ -115,5 +121,27 @@ curves <-
   xlim(-21, 14) +
   ggtitle('Cumulative Cases Prediction')
 
-curves
+
+median_point <-
+  trace %>% 
+  ggplot() +
+  geom_histogram(aes(x = m + s), bins = 100) +
+  xlim(-21, 14)
+
+curves / median_point
+
+derivative_predictions <-
+  merge(
+    trace %>% 
+      sample_n(50),
+    data.frame(expand.grid(t = seq(-14, 14)))
+  ) %>% 
+  mutate(
+    mu_pred = A / (nu * s)  * exp(-(t - m) / s) / (1 + exp(-(t - m) / s)) ^ (1 + 1 / nu)
+  ) 
+
+derivative_predictions %>% 
+  ggplot() +
+  geom_line(aes(x = t, y = mu_pred, group = .draw)) +
+  geom_bar(aes(x = DaysOut, y = n), data = ny_covid_data, stat = 'identity')
 
