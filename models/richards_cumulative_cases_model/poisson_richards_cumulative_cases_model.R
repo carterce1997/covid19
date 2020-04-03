@@ -12,7 +12,7 @@ rstan_options(auto_write = TRUE)
 region <- 'NY'
 
 cumulative_model <-
-  stan_model('stan/richards_cumulative_model.stan')
+  stan_model('models/richards_cumulative_cases_model/stan/poisson_richards_cumulative_model.stan')
 
 get_covid_data <- function() {
   
@@ -86,10 +86,10 @@ stan_data <-
   )
 
 fit <-
-  sampling(cumulative_model, data = stan_data, chains = 1, iter = 4000)
+  sampling(cumulative_model, data = stan_data, chains = 1, iter = 10000)
 
 trace <-
-  spread_draws(fit, A, m, s, nu, phi) 
+  spread_draws(fit, A, m, s, nu) 
 
 predictions <-
   merge(
@@ -97,7 +97,7 @@ predictions <-
     data.frame(expand.grid(t = seq(-14, 14)))
   ) %>% 
   mutate(
-    cumu_y_pred = rnbinom(n(), mu = A  / (1 + exp(-(t - m) / s)) ^ (1 / nu), size = phi)
+    cumu_y_pred = rpois(n(), A  / (1 + exp(-(t - m) / s)) ^ (1 / nu))
   ) 
 
 predictions_quantile <-
@@ -122,26 +122,23 @@ curves <-
   ggtitle('Cumulative Cases Prediction')
 
 
-median_point <-
-  trace %>% 
-  ggplot() +
-  geom_histogram(aes(x = m + s), bins = 100) +
-  xlim(-21, 14)
-
-curves / median_point
+curves
 
 derivative_predictions <-
   merge(
-    trace %>% 
+    trace %>%
       sample_n(50),
     data.frame(expand.grid(t = seq(-14, 14)))
-  ) %>% 
+  ) %>%
   mutate(
     mu_pred = A / (nu * s)  * exp(-(t - m) / s) / (1 + exp(-(t - m) / s)) ^ (1 + 1 / nu)
-  ) 
+  )
 
-derivative_predictions %>% 
+derivatives <-
+  derivative_predictions %>%
   ggplot() +
   geom_line(aes(x = t, y = mu_pred, group = .draw)) +
   geom_bar(aes(x = DaysOut, y = n), data = ny_covid_data, stat = 'identity')
+
+curves / derivatives
 
