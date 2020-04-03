@@ -165,14 +165,17 @@ ui <- fluidPage(
           'Growth Analysis',
           fluidRow(
             column(
-              6,
+              4,
               h3('New Cases vs Cumulative Cases'),
               plotOutput('phase', height = plot_height)
             ),
             column(
-              6,
+              4,
               h3('Ratio of New Cases to Previous New Cases'),
-              plotOutput('gf', height = plot_height),
+              plotOutput('gf', height = plot_height)
+            ),
+            column(
+              4,
               h3('New Cases vs Cumulative Cases Model Estimate'),
               plotOutput('phase_model', height = plot_height)
             )
