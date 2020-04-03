@@ -27,7 +27,7 @@ transformed parameters {
 
 model {
   
-  inv_nu ~ normal(0, 5);
+  inv_nu ~ normal(1, 1);
   a ~ cauchy(0, 5);
   sigma ~ cauchy(0, 5);
   

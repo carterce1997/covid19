@@ -1,8 +1,6 @@
 
 library(shiny)
 library(tidyverse)
-# library(brms)
-# library(rstanarm)
 library(arm)
 library(lubridate)
 library(tidybayes)

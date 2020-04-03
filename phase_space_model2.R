@@ -1,6 +1,6 @@
 
 
-library(rstanarm)
+library(rstan)
 library(tidybayes)
 library(rvest)
 library(tidyverse)
@@ -70,7 +70,7 @@ stan_df <-
   ungroup() %>% 
   filter(
     Region == region,
-    cumu_n >= 1e2
+    cumu_n >= 1e1
   ) %>% 
   select(
     y = n,
@@ -81,7 +81,7 @@ stan_data <-
   compose_data(stan_df)
 
 fit <-
-  sampling(model, data = stan_data, chains = 1, iter = 4000)
+  sampling(model, data = stan_data, chains = 1, iter = 4000 )
 
 
 trace <-
