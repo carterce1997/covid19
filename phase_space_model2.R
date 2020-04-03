@@ -70,7 +70,7 @@ stan_df <-
   ungroup() %>% 
   filter(
     Region == region,
-    cumu_n >= 1e2
+    cumu_n >= 1e1
   ) %>% 
   select(
     y = n,
@@ -85,7 +85,6 @@ map <-
 
 fit <-
   sampling(model, data = stan_data, init = map$par, chains = 1, iter = 4000)
-
 
 trace <-
   spread_draws(fit, a, A, inv_nu, sigma)
