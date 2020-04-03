@@ -1,13 +1,17 @@
 # covid19
 
-Bayesian estimation of the number of cases of COVID-19 in the United States. 
+Statistical exploration of COVID-19 cases.
 
-Hierarchical model assuming cumulative counts are distributed according to a negative binomial distribution around a logistic growth curve. Inflection and flatness parameters partially pooled across states. 
+### Objectives
 
-Goals
- 1. Provide a robust data collection system
- 2. Predict number of cases, when, where
+#### Epidemiological
+- Predict the number of cases of COVID-19 when and where
+- Determine the efficiency of mitigation measures
+- Estimate number of true cases of COVID-19 in the United States
 
-Latest Predictions
+#### Clinical
+- Provide a discrimination tool for use in determining whether a patient needs to be hospitalized
 
-![Updated 2020-03-27](doc/national_predictions_2020-03-27.png)
+#### Journalistic
+- Provide dashboards to connect the general public to narrative-free COVID-19 reporting
+- Construct a centralized reporting website for independent publishing of inferences

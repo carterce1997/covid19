@@ -8,7 +8,7 @@ library(modelr)
 library(lubridate)
 library(patchwork)
 
-region <- 'NY'
+region <- 'USA'
 
 model <-
   stan_model('stan/richardson_phase_space_model.stan')
@@ -80,16 +80,21 @@ stan_df <-
 stan_data <-
   compose_data(stan_df)
 
-fit <-
-  sampling(model, data = stan_data, chains = 1, iter = 4000 )
+map <-
+  optimizing(model, data = stan_data)
 
+fit <-
+  sampling(model, data = stan_data, init = map$par, chains = 1, iter = 4000)
 
 trace <-
   spread_draws(fit, a, A, inv_nu, sigma)
 
+multiplier <-
+  10
+
 pred_grid <-
   stan_df %>% 
-  data_grid(cumu_y = seq_range(c(cumu_y, 4 * max(cumu_y)), n = 100)) %>% 
+  data_grid(cumu_y = seq_range(c(cumu_y, multiplier * max(cumu_y)), n = 100)) %>% 
   filter(cumu_y >= min(stan_df$cumu_y))
 
 pred <-
@@ -106,7 +111,8 @@ pred_quantile <-
     MedianPred = max(median(y_pred), 0),
     HighPred1 = max(quantile(y_pred, .9), 0),
     HighPred2 = max(quantile(y_pred, .99), 0)
-  ) 
+  ) %>% 
+  ungroup()
 
 curves <-
   ggplot() +
@@ -114,7 +120,7 @@ curves <-
   geom_ribbon(aes(x = cumu_y, ymin = LowPred1, ymax = HighPred1), color = 'gray', data = pred_quantile, alpha = .25) +
   geom_line(aes(x = cumu_y, y = MedianPred), color = 'red', data = pred_quantile) +
   geom_point(aes(x = cumu_y, y = y), data = stan_df) +
-  xlim(0, 4 * max(stan_df$cumu_y)) +
+  xlim(0, multiplier * max(stan_df$cumu_y)) +
   theme_minimal()
 
 estimate <-
@@ -122,7 +128,7 @@ estimate <-
   ggplot() +
   geom_histogram(aes(x = A), bins = 100) +
   geom_vline(aes(xintercept = median(A)), color = 'red') +
-  xlim(0, 4 * max(stan_df$cumu_y)) +
+  xlim(0, multiplier * max(stan_df$cumu_y)) +
   theme_minimal() 
 
 curves / estimate

@@ -30,6 +30,7 @@ model {
   inv_nu ~ normal(1, 1);
   a ~ cauchy(0, 5);
   sigma ~ cauchy(0, 5);
+  A ~ cauchy(0, 10);
   
   y ~ normal(mu, sigma);
   
