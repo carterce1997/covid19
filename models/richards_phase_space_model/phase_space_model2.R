@@ -8,10 +8,10 @@ library(modelr)
 library(lubridate)
 library(patchwork)
 
-region <- 'USA'
+region <- 'VT'
 
 model <-
-  stan_model('stan/richardson_phase_space_model.stan')
+  stan_model('models/richards_phase_space_model/stan/richardson_phase_space_model.stan')
 
 get_covid_data <- function() {
   
@@ -58,8 +58,8 @@ get_covid_data <- function() {
   
 }
 
-covid_data <-
-  get_covid_data()
+# covid_data <-
+#   get_covid_data()
 
 stan_df <-
   covid_data %>% 

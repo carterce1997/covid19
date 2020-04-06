@@ -163,20 +163,20 @@ ui <- fluidPage(
           'Growth Analysis',
           fluidRow(
             column(
-              4,
+              6,
               h3('New Cases vs Cumulative Cases'),
               plotOutput('phase', height = plot_height)
             ),
             column(
-              4,
+              6,
               h3('Ratio of New Cases to Previous New Cases'),
               plotOutput('gf', height = plot_height)
-            ),
-            column(
-              4,
-              h3('New Cases vs Cumulative Cases Model Estimate'),
-              plotOutput('phase_model', height = plot_height)
             )
+            # column(
+            #   4,
+            #   h3('New Cases vs Cumulative Cases Model Estimate'),
+            #   plotOutput('phase_model', height = plot_height)
+            # )
           )
         )
       ),
@@ -276,17 +276,17 @@ server <- function(input, output, session) {
       ggplot() +
       geom_line(aes(x = date, y = growth_factor)) +
       geom_hline(yintercept = 1, linetype = 'dashed', color = 'red') +
-      scale_y_continuous(expand = expand_scale(add = 1)) +
+      scale_y_log10(expand = expand_scale(add = 1)) +
       theme_minimal()     
     
   })
   
-  output$phase_model <- renderPlot({
-    
-    covid_data() %>% 
-      phase_model_chart(input$state)
-    
-  })
+  # output$phase_model <- renderPlot({
+  #   
+  #   covid_data() %>% 
+  #     phase_model_chart(input$state)
+  #   
+  # })
   
   
 }

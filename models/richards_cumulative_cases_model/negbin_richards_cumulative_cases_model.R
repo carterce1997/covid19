@@ -59,8 +59,8 @@ get_covid_data <- function() {
   
 }
 
-covid_data <-
-  get_covid_data()
+# covid_data <-
+#   get_covid_data()
 
 ny_covid_data <-
   covid_data %>% 
@@ -74,7 +74,7 @@ ny_covid_data <-
     cumu_n = cumsum(n)
   ) %>% 
   filter(
-    DaysOut >= -21
+    DaysOut >= -28
   )
 
 
@@ -86,7 +86,7 @@ stan_data <-
   )
 
 fit <-
-  sampling(cumulative_model, data = stan_data, chains = 1, iter = 4000)
+  sampling(cumulative_model, data = stan_data, chains = 1, iter = 10000)
 
 trace <-
   spread_draws(fit, A, m, s, nu, phi) 
@@ -125,7 +125,7 @@ curves <-
 median_point <-
   trace %>% 
   ggplot() +
-  geom_histogram(aes(x = m + s), bins = 100) +
+  geom_histogram(aes(x = m + s * log(.5 ^ nu / (1 - .5 ^ nu))), bins = 100) +
   xlim(-21, 14)
 
 curves / median_point
@@ -140,7 +140,8 @@ derivative_predictions <-
     mu_pred = A / (nu * s)  * exp(-(t - m) / s) / (1 + exp(-(t - m) / s)) ^ (1 + 1 / nu)
   ) 
 
-derivative_predictions %>% 
+derivative_curves <-
+  derivative_predictions %>% 
   ggplot() +
   geom_line(aes(x = t, y = mu_pred, group = .draw)) +
   geom_bar(aes(x = DaysOut, y = n), data = ny_covid_data, stat = 'identity')
