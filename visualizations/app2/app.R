@@ -9,7 +9,7 @@ library(modelr)
 get_covid_data <- function() {
   
   results <-
-    read_csv('http://covidtracking.com/api/states/daily.csv') %>% 
+    vroom::vroom('http://covidtracking.com/api/states/daily.csv') %>% 
     mutate(date = ymd(date)) %>% 
     replace(is.na(.), 0)
   
@@ -163,14 +163,25 @@ ui <- fluidPage(
           'Growth Analysis',
           fluidRow(
             column(
-              6,
+              3,
+              h3('Current Cases Pending Outcome'),
+              plotOutput('current', height = plot_height),
+              plotOutput('current_daily', height = plot_height)
+            ),
+            column(
+              3,
               h3('New Cases vs Cumulative Cases'),
               plotOutput('phase', height = plot_height)
             ),
             column(
-              6,
+              3,
               h3('Ratio of New Cases to Previous New Cases'),
               plotOutput('gf', height = plot_height)
+            ),
+            column(
+              3,
+              h3('Growth Factor Overview'),
+              plotOutput('gf_overview', height = '600px')
             )
             # column(
             #   4,
@@ -287,6 +298,54 @@ server <- function(input, output, session) {
   #     phase_model_chart(input$state)
   #   
   # })
+  
+  output$current <- renderPlot({
+    
+    covid_data() %>% 
+      arrange(date) %>% 
+      group_by(state) %>% 
+      mutate(
+        current_cases = positive - death - recovered,
+        current_cases_increase = c(0, diff(current_cases))
+      ) %>% 
+      ungroup() %>% 
+      cumulative_chart(input$state, current_cases, logscale = input$logscale)
+    
+  })
+  
+  output$current_daily <- renderPlot({
+    
+    covid_data() %>% 
+      arrange(date) %>% 
+      group_by(state) %>% 
+      mutate(
+        current_cases = positive - death - recovered,
+        current_cases_increase = c(0, diff(current_cases))
+      ) %>% 
+      ungroup() %>% 
+      daily_chart(input$state, current_cases_increase)
+    
+  })
+  
+  output$gf_overview <- renderPlot({
+    
+    covid_data() %>% 
+      arrange(date) %>% 
+      group_by(state) %>% 
+      filter(positiveIncrease > 0) %>% 
+      mutate(growth_factor = positiveIncrease / lag(positiveIncrease)) %>% 
+      slice(max(n() - 7, 1):n()) %>% 
+      summarize(seven_day_growth_factor = exp(mean(log(growth_factor)))) %>% 
+      ungroup() %>% 
+      mutate(state = fct_reorder(state, seven_day_growth_factor)) %>% 
+      ggplot(aes(x = seven_day_growth_factor, xend = 1, y = state, yend = state)) +
+      geom_point() +
+      geom_segment() +
+      geom_vline(xintercept = 1, linetype = 'dashed', color = 'red') + 
+      theme_minimal()
+    
+    
+  })
   
   
 }
