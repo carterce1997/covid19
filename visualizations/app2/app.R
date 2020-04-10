@@ -119,8 +119,8 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       selectizeInput('state', 'State', choices = sort(unique(get_covid_data()$state)), selected = 'USA'),
-      checkboxInput('logscale', 'Log Scale', value = FALSE),
-      dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 30, end = Sys.Date()),
+      checkboxInput('logscale', 'Log Scale', value = TRUE),
+      dateRangeInput('daterange', 'Date Range', start = as.Date('2020-03-01'), end = Sys.Date()),
       div(HTML('Data from <a target="_blank" href="https://covidtracking.com/">covidtracking.com</a>.')),
       hr(),
       div(HTML('If you would like to participate in this project, join the discussion on Slack <a target="_blank" href="https://join.slack.com/t/covid19datadi-nrv2825/shared_invite/zt-dajqaeac-nTNwKEtzkWUwqs_Y669csw">here</a>.')),
@@ -267,13 +267,30 @@ server <- function(input, output, session) {
   
   output$phase <- renderPlot({
     
-    covid_data() %>% 
-      filter(positive > 50, positiveIncrease > 0) %>% 
+    df <-
+      covid_data() %>% 
+      filter(positive > 50, positiveIncrease > 0)
+    
+    xrange <-
+      df %>% 
+      filter(state == input$state) %>% 
+      pull(positive) %>% 
+      range()
+    
+    yrange <-
+      df %>% 
+      filter(state == input$state) %>% 
+      pull(positiveIncrease) %>% 
+      range()
+    
+    df %>% 
       ggplot() +
       geom_line(aes(x = positive, y = positiveIncrease, group = state, alpha = state == input$state)) +
       scale_alpha_manual(values = c('TRUE' = 1, 'FALSE' = .1)) +
-      scale_x_log10() +
-      scale_y_log10() +
+      { if (input$logscale) scale_x_log10() else scale_x_continuous(limits = xrange) } +
+      { if (input$logscale) scale_y_log10() else scale_y_continuous(limits = yrange) } +
+      # scale_x_log10() +
+      # scale_y_log10() +
       theme_minimal() +
       theme(legend.position = 'none')
     
@@ -300,33 +317,33 @@ server <- function(input, output, session) {
   #   
   # })
   
-  output$current <- renderPlot({
-    
-    covid_data() %>% 
-      arrange(date) %>% 
-      group_by(state) %>% 
-      mutate(
-        current_cases = positive - death - recovered,
-        current_cases_increase = c(0, diff(current_cases))
-      ) %>% 
-      ungroup() %>% 
-      cumulative_chart(input$state, current_cases, logscale = input$logscale)
-    
-  })
-  
-  output$current_daily <- renderPlot({
-    
-    covid_data() %>% 
-      arrange(date) %>% 
-      group_by(state) %>% 
-      mutate(
-        current_cases = positive - death - recovered,
-        current_cases_increase = c(0, diff(current_cases))
-      ) %>% 
-      ungroup() %>% 
-      daily_chart(input$state, current_cases_increase)
-    
-  })
+  # output$current <- renderPlot({
+  #   
+  #   covid_data() %>% 
+  #     arrange(date) %>% 
+  #     group_by(state) %>% 
+  #     mutate(
+  #       current_cases = positive - death - recovered,
+  #       current_cases_increase = c(0, diff(current_cases))
+  #     ) %>% 
+  #     ungroup() %>% 
+  #     cumulative_chart(input$state, current_cases, logscale = input$logscale)
+  #   
+  # })
+  # 
+  # output$current_daily <- renderPlot({
+  #   
+  #   covid_data() %>% 
+  #     arrange(date) %>% 
+  #     group_by(state) %>% 
+  #     mutate(
+  #       current_cases = positive - death - recovered,
+  #       current_cases_increase = c(0, diff(current_cases))
+  #     ) %>% 
+  #     ungroup() %>% 
+  #     daily_chart(input$state, current_cases_increase)
+  #   
+  # })
   
   output$gf_overview <- renderPlot({
     

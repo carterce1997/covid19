@@ -23,7 +23,8 @@ get_covid_cases <- function() {
     counts_raw[2,]
   
   counts_raw <-
-    counts_raw[-1:-2,-ncol(counts_raw):-(ncol(counts_raw) - 6)]
+    counts_raw[-1:-2,-ncol(counts_raw):-(ncol(counts_raw) - 6)] %>% 
+    select(-West)
   
   counts <-
     counts_raw %>% 
