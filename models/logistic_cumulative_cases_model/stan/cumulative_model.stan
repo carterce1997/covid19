@@ -29,7 +29,6 @@ model {
   
   m ~ cauchy(0, 20);
   s ~ cauchy(0, 20);
-  A ~ cauchy(0, 20);
   phi ~ cauchy(0, 3);
 
   cumu_y ~ neg_binomial_2(mu, phi);

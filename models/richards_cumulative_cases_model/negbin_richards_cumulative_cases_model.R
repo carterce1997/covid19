@@ -16,73 +16,38 @@ cumulative_model <-
 
 get_covid_data <- function() {
   
-  content_url <- 
-    'https://en.wikipedia.org/wiki/Template:2019-20_coronavirus_pandemic_data/United_States_medical_cases'
+  results <-
+    vroom::vroom('http://covidtracking.com/api/states/daily.csv') %>% 
+    mutate(date = ymd(date)) %>% 
+    replace(is.na(.), 0)
   
-  content <-
-    read_html(content_url)
-  
-  counts_raw <-
-    content %>% 
-    html_nodes('table') %>% 
-    .[1] %>% 
-    html_table(fill = TRUE, header = FALSE) %>% 
-    as.data.frame()
-  
-  colnames(counts_raw) <- 
-    counts_raw[2,]
-  
-  counts_raw <-
-    counts_raw[-1,-ncol(counts_raw):-(ncol(counts_raw) - 6)] 
-  
-  counts <-
-    counts_raw %>% 
-    filter(nchar(Date) <= 10) %>% 
-    mutate(
-      Date = mdy(paste(Date, ', 2020'))
-    ) %>% 
-    drop_na(Date) %>% 
-    pivot_longer(AK:PR, names_to = 'Region', values_to = 'n') %>% 
-    mutate(
-      n = as.numeric(n),
-      n = replace_na(n, 0)
-    )
-  
-  total_counts <-
-    counts %>% 
-    group_by(Date) %>% 
-    summarize(n = sum(n)) %>% 
+  totals <-
+    results %>% 
+    group_by(date) %>% 
+    summarize_all(function(x) if( 'numeric' %in% class(x)) sum(x) else NA) %>% 
     ungroup() %>% 
-    mutate(Region = 'USA')
+    mutate(state = 'USA')
   
-  return(rbind(counts, total_counts))
+  return(rbind(results, totals))
   
 }
 
-# covid_data <-
-#   get_covid_data()
+covid_data <-
+  get_covid_data()
 
 ny_covid_data <-
   covid_data %>% 
-  filter(
-    Region == region,
-    !(Date == max(Date) & n == 0)
-  ) %>% 
-  arrange(Date) %>% 
-  mutate(
-    DaysOut = as.numeric(difftime(Date, Sys.Date(), units = 'days')),
-    cumu_n = cumsum(n)
-  ) %>% 
-  filter(
-    DaysOut >= -28
-  )
+  filter(state == region) %>% 
+  arrange(date) %>% 
+  mutate(DaysOut = as.numeric(difftime(date, Sys.Date(), units = 'days'))) %>% 
+  filter(DaysOut >= -28)
 
 
 stan_data <-
   list(
     n = nrow(ny_covid_data),
     t = ny_covid_data$DaysOut,
-    cumu_y = ny_covid_data$cumu_n
+    cumu_y = ny_covid_data$positive
   )
 
 fit <-
@@ -117,7 +82,7 @@ curves <-
   geom_ribbon(aes(x = t, ymin = LowPred2, ymax = HighPred2), color = 'gray', data = predictions_quantile, alpha = .25) +
   geom_ribbon(aes(x = t, ymin = LowPred1, ymax = HighPred1), color = 'gray', data = predictions_quantile, alpha = .25) +
   geom_line(aes(x = t, y = MedianPred), color = 'red', data = predictions_quantile) +
-  geom_line(aes(x = DaysOut, y = cumu_n), data = ny_covid_data, stat = 'identity', color = 'black', size = 1) +
+  geom_line(aes(x = DaysOut, y = positive), data = ny_covid_data, stat = 'identity', color = 'black', size = 1) +
   xlim(-21, 14) +
   ggtitle('Cumulative Cases Prediction')
 
@@ -129,20 +94,3 @@ median_point <-
   xlim(-21, 14)
 
 curves / median_point
-
-derivative_predictions <-
-  merge(
-    trace %>% 
-      sample_n(50),
-    data.frame(expand.grid(t = seq(-14, 14)))
-  ) %>% 
-  mutate(
-    mu_pred = A / (nu * s)  * exp(-(t - m) / s) / (1 + exp(-(t - m) / s)) ^ (1 + 1 / nu)
-  ) 
-
-derivative_curves <-
-  derivative_predictions %>% 
-  ggplot() +
-  geom_line(aes(x = t, y = mu_pred, group = .draw)) +
-  geom_bar(aes(x = DaysOut, y = n), data = ny_covid_data, stat = 'identity')
-

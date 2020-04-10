@@ -114,13 +114,14 @@ daily_chart <- function(covid_data, state_, variable) {
 plot_height <- '300px'
 
 ui <- fluidPage(
+  tags$head(includeHTML(("google-analytics.html"))),
   titlePanel('COVID-19 Dashboard'),
   sidebarLayout(
     sidebarPanel(
       selectizeInput('state', 'State', choices = sort(unique(get_covid_data()$state)), selected = 'USA'),
       checkboxInput('logscale', 'Log Scale', value = FALSE),
       dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 30, end = Sys.Date()),
-      div(HTML('Data from <a target="_blank" href="https://covidtracking.com/">covidtracking.com</a>. Modeling assumes logistic growth.')),
+      div(HTML('Data from <a target="_blank" href="https://covidtracking.com/">covidtracking.com</a>.')),
       hr(),
       div(HTML('If you would like to participate in this project, join the discussion on Slack <a target="_blank" href="https://join.slack.com/t/covid19datadi-nrv2825/shared_invite/zt-dajqaeac-nTNwKEtzkWUwqs_Y669csw">here</a>.')),
       hr(),
@@ -162,24 +163,24 @@ ui <- fluidPage(
         tabPanel(
           'Growth Analysis',
           fluidRow(
+            # column(
+            #   3,
+            #   h3('Current Cases Pending Outcome'),
+            #   plotOutput('current', height = plot_height),
+            #   plotOutput('current_daily', height = plot_height)
+            # ),
             column(
-              3,
-              h3('Current Cases Pending Outcome'),
-              plotOutput('current', height = plot_height),
-              plotOutput('current_daily', height = plot_height)
-            ),
-            column(
-              3,
+              4,
               h3('New Cases vs Cumulative Cases'),
               plotOutput('phase', height = plot_height)
             ),
             column(
-              3,
+              4,
               h3('Ratio of New Cases to Previous New Cases'),
               plotOutput('gf', height = plot_height)
             ),
             column(
-              3,
+              4,
               h3('Growth Factor Overview'),
               plotOutput('gf_overview', height = '600px')
             )
