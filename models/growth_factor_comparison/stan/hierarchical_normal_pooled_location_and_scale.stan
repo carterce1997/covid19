@@ -22,6 +22,9 @@ parameters {
 
 model {
   
+  alpha ~ normal(0, 1);
+  gamma ~ normal(0, 1);
+  
   mu ~ normal(alpha, gamma);
   sigma ~ chi_square(nu);
   
