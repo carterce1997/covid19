@@ -5,9 +5,8 @@ account: christophercarter
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2030525
-bundleId: 2996430
+bundleId: 2997690
 url: https://christophercarter.shinyapps.io/coronavirus/
-when: 1586525695.392
+when: 1586546870.57105
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: eda.R
