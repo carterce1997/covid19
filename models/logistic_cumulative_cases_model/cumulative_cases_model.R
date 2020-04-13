@@ -75,29 +75,5 @@ curves <-
   ylim(0, max(trace$A)) +
   ggtitle('Cumulative Cases Prediction')
 
-p <- .5
-inflection_estimate <-
-  trace %>% 
-  ggplot() +
-  geom_histogram(aes(x = m + s * log(p / (1 - p))), bins = 100) +
-  geom_vline(aes(xintercept = median(m + s * log(p / (1 - p))))) +
-  xlim(-14, 14) +
-  ggtitle('Inflection Point Estimate')
-
-total_cases_estimate <-
-  trace %>% 
-  ggplot() +
-  geom_histogram(aes(x = A), bins = 50) +
-  geom_vline(aes(xintercept = median(A))) +
-  xlim(0, max(trace$A)) +
-  coord_flip() +
-  ggtitle('Total Cases Estimate')
-
-curves + 
-  total_cases_estimate + 
-  inflection_estimate + 
-  plot_spacer() +
-  plot_layout(ncol = 2, widths = c(3, 1, 3, 1))
-
 curves
 

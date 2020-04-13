@@ -172,7 +172,9 @@ ui <- fluidPage(
             column(
               4,
               h3('New Cases vs Cumulative Cases'),
-              plotOutput('phase', height = plot_height)
+              plotOutput('phase', height = plot_height),
+              h3('Normalized Growth vs Total'),
+              plotOutput('growth_characteristic', height = plot_height)
             ),
             column(
               4,
@@ -296,10 +298,23 @@ server <- function(input, output, session) {
     
   })
   
+  output$growth_characteristic <- renderPlot({
+    
+    covid_data() %>% 
+      filter(state == input$state) %>% 
+      group_by(state) %>% 
+      ggplot(aes(x = positive, y = positiveIncrease / positive)) +
+      geom_line() +
+      geom_hline(aes(yintercept = 0)) +
+      facet_wrap(~ state, scales = 'free') +
+      theme_minimal() 
+    
+  })
+  
   output$gf <- renderPlot({
     
     covid_data() %>% 
-      filter(positive > 50, positiveIncrease > 0, state == input$state) %>% 
+      filter(positiveIncrease > 0, state == input$state) %>% 
       arrange(date) %>% 
       mutate(growth_factor = positiveIncrease / lag(positiveIncrease)) %>% 
       ggplot() +
