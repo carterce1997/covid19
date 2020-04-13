@@ -25,10 +25,29 @@ covid_data <-
 
 
 covid_data %>% 
-  filter(state == 'USA') %>%
-  ggplot() +
-  geom_point(aes(x = positive, y = positiveIncrease / positive)) +
-  facet_wrap(~ state) +
-  theme_minimal()
+  group_by(state) %>% 
+  filter(positive > .05 * max(positive)) %>% 
+  ggplot(aes(x = positive, y = positiveIncrease / positive)) +
+  geom_line() +
+  geom_hline(aes(yintercept = 0)) +
+  facet_wrap(~ state, scales = 'free') +
+  theme_minimal() +
+  theme(aspect.ratio = 1)
+
+
+covid_data %>% 
+  group_by(state) %>%
+  filter(positive > .05 * max(positive)) %>%
+  ggplot(aes(x = positive, y = positiveIncrease / positive)) +
+  geom_line() +
+  geom_hline(aes(yintercept = 0)) +
+  facet_wrap(~ state, scales = 'free') +
+  theme_minimal() +
+  theme(aspect.ratio = 1)
+
+
+
+
+
 
 
