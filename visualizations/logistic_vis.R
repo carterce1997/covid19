@@ -3,6 +3,7 @@ library(tidyverse)
 library(lubridate)
 library(rstanarm)
 library(tidybayes)
+library(patchwork)
 
 state_ <- 'NY'
 
@@ -54,43 +55,57 @@ trace <-
 
 # growth
 
-covid_data %>% 
+growth_data <-
+  covid_data %>% 
   filter(state == state_) %>% 
   group_by(state) %>% 
   filter(positive > .15 * max(positive)) %>% 
+  ungroup()
+
+growth <-
+  growth_data %>% 
   ggplot(aes(x = positive, y = positiveIncrease / positive)) +
   geom_line() +
   geom_hline(aes(yintercept = 0)) +
+  xlim(0, max(growth_data$positive)) +
   facet_wrap(~ state, scales = 'free') +
   theme_minimal() +
-  theme(aspect.ratio = 1)
+  ggtitle('Growth')
 
 
 # carrying capacity
 
-trace %>% 
+proj_cases <-
+  trace %>% 
   ggplot() +
   geom_histogram(aes(x = A), bins = 50) +
-  theme_minimal()
+  theme_minimal() +
+  ggtitle('Projected Total Cases')
 
 
 # current percent runthrough
 
-trace %>% 
+runthrough <-
+  trace %>% 
   ggplot() +
   geom_histogram(aes(x = current_cases / A), bins = 50) +
   xlim(0, 1) +
-  theme_minimal()
+  theme_minimal() +
+  ggtitle('Current Percent Runthrough')
 
 
 # days from today until 100p % runthrough
 
 p <-
-  .98
+  .95
 
-trace %>% 
+days_to_95_percent_complete <-
+  trace %>% 
   ggplot() +
   geom_histogram(aes(x = m + 1/r * log(p / (1 - p))), bins = 50) +
-  theme_minimal()
+  theme_minimal() +
+  ggtitle('Days Until 95% Runthrough')
+
+growth + proj_cases + runthrough + days_to_95_percent_complete
 
 
