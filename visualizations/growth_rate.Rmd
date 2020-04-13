@@ -1,0 +1,50 @@
+---
+title: "Growth Rate Visualization"
+output:
+  html_document:
+    df_print: paged
+---
+
+Libraries and API call function.
+```{r}
+library(tidyverse)
+library(lubridate)
+
+get_covid_data <- function() {
+  
+  results <-
+    vroom::vroom('http://covidtracking.com/api/states/daily.csv') %>% 
+    mutate(date = ymd(date)) %>% 
+    replace(is.na(.), 0)
+  
+  totals <-
+    results %>% 
+    group_by(date) %>% 
+    summarize_all(function(x) if( 'numeric' %in% class(x)) sum(x) else NA) %>% 
+    ungroup() %>% 
+    mutate(state = 'USA')
+  
+  return(rbind(results, totals))
+  
+}
+```
+
+Call the API.
+```{r}
+covid_data <-
+  get_covid_data()
+```
+
+
+Make the plot.
+```{r}
+state_ <- 'USA'
+
+covid_data %>% 
+  filter(state == state_) %>%
+  ggplot() +
+  geom_point(aes(x = positive, y = positiveIncrease / positive)) +
+  theme_minimal()
+```
+
+

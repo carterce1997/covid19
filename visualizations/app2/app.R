@@ -303,6 +303,8 @@ server <- function(input, output, session) {
     covid_data() %>% 
       filter(state == input$state) %>% 
       group_by(state) %>% 
+      filter(positive > .1 * max(positive)) %>% 
+      ungroup() %>% 
       ggplot(aes(x = positive, y = positiveIncrease / positive)) +
       geom_line() +
       geom_hline(aes(yintercept = 0)) +
