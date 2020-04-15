@@ -32,11 +32,19 @@ covid_data <-
 
 covid_data %>% 
   group_by(state) %>% 
-  filter(positive > .1 * max(positive)) %>% 
+  filter(
+    positive > .1 * max(positive),
+    any(max(positive) > 10000),
+    positiveIncrease >= 0
+  ) %>%
+  mutate(
+    rate = positiveIncrease / positive,
+    positive = positive / max(positive)
+  ) %>% 
   ungroup() %>% 
-ggplot(aes(x = positive, y = positiveIncrease / positive)) +
-  geom_line() +
+  ggplot(aes(x = positive, y = rate, group = state)) +
+  geom_line(alpha = .5) +
   geom_hline(aes(yintercept = 0)) +
-  facet_wrap(~ state, scales = 'free') +
-  theme_minimal() +
-  ggtitle('Growth')
+  # facet_wrap(~ state) +
+  ggtitle('Growth') +
+  theme_minimal()
