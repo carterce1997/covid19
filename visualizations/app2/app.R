@@ -8,8 +8,6 @@ library(modelr)
 
 get_covid_data <- function() {
   
-  return(readRDS('covid_data.rds'))
-  
   results <-
     vroom::vroom('http://covidtracking.com/api/states/daily.csv') %>% 
     mutate(date = ymd(date)) %>% 
