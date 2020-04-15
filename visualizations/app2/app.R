@@ -305,7 +305,7 @@ server <- function(input, output, session) {
           ), 
         nudge_x = .4,
         nudge_y = -.4,
-        size = 2.5
+        size = 3
       ) +
       scale_alpha_manual(values = c('TRUE' = 1, 'FALSE' = .1)) +
       { if (input$logscale) scale_x_log10() else scale_x_continuous(limits = xrange) } +
