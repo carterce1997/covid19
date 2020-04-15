@@ -317,16 +317,32 @@ server <- function(input, output, session) {
   
   output$growth_characteristic <- renderPlot({
     
-    covid_data() %>% 
-      filter(state == input$state) %>% 
-      group_by(state) %>% 
-      filter(positive > .1 * max(positive)) %>% 
-      ungroup() %>% 
+    # covid_data() %>% 
+    #   filter(state == input$state) %>% 
+    #   group_by(state) %>% 
+    #   filter(positive > .1 * max(positive)) %>% 
+    #   ungroup() %>% 
+    #   ggplot(aes(x = positive, y = positiveIncrease / positive)) +
+    #   geom_line() +
+    #   geom_hline(aes(yintercept = 0)) +
+    #   facet_wrap(~ state, scales = 'free') +
+    #   theme_minimal() 
+    
+    df <-
+      covid_data() %>% 
+      filter(state == 'NY') %>% 
+      filter(positive > .15 * max(positive))
+    
+    df %>% 
       ggplot(aes(x = positive, y = positiveIncrease / positive)) +
       geom_line() +
+      stat_smooth(method = "lm", se = FALSE, fullrange = TRUE, linetype = 'dotted', color = 'red') +
       geom_hline(aes(yintercept = 0)) +
-      facet_wrap(~ state, scales = 'free') +
-      theme_minimal() 
+      xlim(0, 1.5 * max(df$positive)) +
+      ylim(0, max(df$positiveIncrease / df$positive)) +
+      facet_wrap(~ state) +
+      ggtitle('Growth') +
+      theme_minimal()
     
   })
   
