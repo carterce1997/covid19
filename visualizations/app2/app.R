@@ -390,11 +390,13 @@ server <- function(input, output, session) {
       summarize(seven_day_growth_factor = exp(mean(log(growth_factor)))) %>% 
       ungroup() %>% 
       mutate(state = fct_reorder(state, seven_day_growth_factor)) %>% 
-      ggplot(aes(x = seven_day_growth_factor, xend = 1, y = state, yend = state)) +
+      ggplot(aes(x = seven_day_growth_factor, xend = 1, y = state, yend = state, alpha = state == input$state)) +
       geom_point() +
       geom_segment() +
+      scale_alpha_manual(values = c('TRUE' = 1, 'FALSE' = .2)) +
       geom_vline(xintercept = 1, linetype = 'dashed', color = 'red') + 
-      theme_minimal()
+      theme_minimal() +
+      theme(legend.position = 'none')
     
     
   })
