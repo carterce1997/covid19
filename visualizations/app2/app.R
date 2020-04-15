@@ -330,7 +330,7 @@ server <- function(input, output, session) {
     
     df <-
       covid_data() %>% 
-      filter(state == 'NY') %>% 
+      filter(state == input$state) %>% 
       filter(positive > .15 * max(positive))
     
     df %>% 
