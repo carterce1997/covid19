@@ -34,8 +34,9 @@ covid_data %>%
   group_by(state) %>% 
   filter(positive > .1 * max(positive)) %>% 
   ungroup() %>% 
-ggplot(aes(x = positive, y = positiveIncrease / positive)) +
+  ggplot(aes(x = positive, y = positiveIncrease / positive)) +
   geom_line() +
+  geom_smooth(method = 'lm', se = F) +
   geom_hline(aes(yintercept = 0)) +
   facet_wrap(~ state, scales = 'free') +
   theme_minimal() +
