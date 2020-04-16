@@ -297,7 +297,7 @@ server <- function(input, output, session) {
             date == max(date)
           )
       ) +
-      geom_line(aes(x = positive, y = 0.25 * positive), data = df %>% filter(state == 'USA'))+
+      geom_line(aes(x = positive, y = 0.25 * positive), data = df %>% filter(state == 'USA'), color = 'blue', linetype = 'dashed')+
       ggrepel::geom_text_repel(
         aes(x = positive, y = positiveIncrease, label = state, alpha = state == input$state), 
         data = df %>% 
@@ -337,7 +337,7 @@ server <- function(input, output, session) {
     df %>% 
       ggplot(aes(x = positive, y = positiveIncrease / positive)) +
       geom_line() +
-      stat_smooth(method = "lm", se = FALSE, fullrange = TRUE, linetype = 'dotted', color = 'red') +
+      stat_smooth(method = "lm", se = FALSE, fullrange = TRUE, linetype = 'dashed', color = 'green') +
       geom_hline(aes(yintercept = 0)) +
       xlim(0, 1.5 * max(df$positive)) +
       ylim(0, max(df$positiveIncrease / df$positive)) +
