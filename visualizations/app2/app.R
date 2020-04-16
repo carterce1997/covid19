@@ -337,7 +337,7 @@ server <- function(input, output, session) {
     df %>% 
       ggplot(aes(x = positive, y = positiveIncrease / positive)) +
       geom_line() +
-      stat_smooth(method = "lm", se = FALSE, fullrange = TRUE, linetype = 'dashed', color = 'green') +
+      stat_smooth(method = "lm", se = FALSE, fullrange = TRUE, linetype = 'dotted', color = 'green') +
       geom_hline(aes(yintercept = 0)) +
       xlim(0, 1.5 * max(df$positive)) +
       ylim(0, max(df$positiveIncrease / df$positive)) +

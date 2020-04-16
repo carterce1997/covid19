@@ -5,9 +5,8 @@ account: christophercarter
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2030525
-bundleId: 3017205
+bundleId: 3024589
 url: https://christophercarter.shinyapps.io/coronavirus/
-when: 1586960783.0143
+when: 1587079569.18861
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: covid_data.rds
