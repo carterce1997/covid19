@@ -297,6 +297,7 @@ server <- function(input, output, session) {
             date == max(date)
           )
       ) +
+      geom_line(aes(x = positive, y = 0.25 * positive), data = df %>% filter(state == 'USA'))+
       ggrepel::geom_text_repel(
         aes(x = positive, y = positiveIncrease, label = state, alpha = state == input$state), 
         data = df %>% 

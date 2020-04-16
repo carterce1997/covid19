@@ -31,17 +31,14 @@ covid_data <-
 
 df <-
   covid_data %>% 
-  filter(state == 'NY') %>% 
-  filter(positive > .15 * max(positive))
+  filter(positiveIncrease > 0)
 
 df %>% 
-  ggplot(aes(x = positive, y = positiveIncrease / positive)) +
-  geom_line() +
-  stat_smooth(method = "lm", se = FALSE, fullrange = TRUE, linetype = 'dotted', color = 'red') +
-  geom_hline(aes(yintercept = 0)) +
-  xlim(0, 1.5 * max(df$positive)) +
-  ylim(0, max(df$positiveIncrease / df$positive)) +
-  facet_wrap(~ state) +
+  ggplot(aes(x = positive, y = positiveIncrease, group = state)) +
+  geom_line(alpha = 0.1) +
+  geom_line(aes(x = positive, y = 0.25 * positive), data = df %>% filter(state == 'USA'), linetype = 'dotted', color = 'red') +
+  scale_x_log10() +
+  scale_y_log10() +
   ggtitle('Growth') +
   theme_minimal()
 
