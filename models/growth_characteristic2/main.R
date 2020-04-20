@@ -87,7 +87,4 @@ ggplot() +
   theme_minimal()
 
 
-trace %>% 
-  summary()
-
 

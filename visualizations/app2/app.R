@@ -9,18 +9,20 @@ library(modelr)
 get_covid_data <- function() {
   
   results <-
-    vroom::vroom('http://covidtracking.com/api/states/daily.csv') %>% 
-    mutate(date = ymd(date)) %>% 
+    vroom::vroom('http://covidtracking.com/api/states/daily.csv') %>%
+    mutate(date = ymd(date)) %>%
     replace(is.na(.), 0)
-  
+
   totals <-
-    results %>% 
-    group_by(date) %>% 
-    summarize_all(function(x) if( 'numeric' %in% class(x)) sum(x) else NA) %>% 
-    ungroup() %>% 
+    results %>%
+    group_by(date) %>%
+    summarize_all(function(x) if( 'numeric' %in% class(x)) sum(x) else NA) %>%
+    ungroup() %>%
     mutate(state = 'USA')
-  
+
   return(rbind(results, totals))
+  
+  # readRDS('covid_data.rds')
   
 }
 
@@ -34,66 +36,6 @@ cumulative_chart <- function(covid_data, state_, variable, logscale) {
     ggplot() +
     geom_line(aes(x = date, y = !!variable)) +
     { if (logscale) scale_y_log10() } +
-    theme_minimal()
-  
-}
-
-phase_model_chart <- function(covid_data, state_) {
-  
-  stan_df <-
-    covid_data %>% 
-    filter(state == state_)
-  
-  fit <-
-    lm(positiveIncrease ~ 0 + I(positive) + I(positive^2), data = stan_df)
-  
-  samples <-
-    sim(fit, n.sims = 1e4)
-  
-  trace <-
-    samples %>% 
-    coef() %>% 
-    as.data.frame()
-  
-  trace$sigma <-
-    samples@sigma
-  
-  
-  trace <-
-    trace %>% 
-    rename(a = `I(positive)`, b = `I(positive^2)`) %>% 
-    mutate(
-      A = -a / b,
-      s = 1 / a
-    ) 
-  
-  pred_grid <-
-    stan_df %>% 
-    data_grid(positive = seq_range(c(positive, 4 * max(positive)), n = 100)) %>% 
-    filter(positive >= min(stan_df$positive))
-  
-  pred <-
-    trace %>% 
-    merge(pred_grid) %>% 
-    mutate(y_pred = rnorm(n(), a * positive + b * positive ^ 2, sigma))
-  
-  pred_quantile <-
-    pred %>% 
-    group_by(positive) %>% 
-    summarize(
-      LowPred2 = max(quantile(y_pred, .01), 0),
-      LowPred1 = max(quantile(y_pred, .1), 0),
-      MedianPred = max(median(y_pred), 0),
-      HighPred1 = max(quantile(y_pred, .9), 0),
-      HighPred2 = max(quantile(y_pred, .99), 0)
-    ) 
-  
-  ggplot() +
-    geom_ribbon(aes(x = positive, ymin = LowPred2, ymax = HighPred2), color = 'gray', data = pred_quantile, alpha = .25) +
-    geom_ribbon(aes(x = positive, ymin = LowPred1, ymax = HighPred1), color = 'gray', data = pred_quantile, alpha = .25) +
-    geom_line(aes(x = positive, y = MedianPred), color = 'red', data = pred_quantile) +
-    geom_point(aes(x = positive, y = positiveIncrease), data = stan_df) +
-    xlim(0, 4 * max(stan_df$positive)) +
     theme_minimal()
   
 }
@@ -135,26 +77,29 @@ ui <- fluidPage(
           fluidRow(
             column(
               3,
+              h3('Cases'),
+              div('Cumulative and daily positive cases.'),
+              plotOutput('positive', height = plot_height),
+              plotOutput('positive_daily', height = plot_height)
+            ),
+            column(
+              3,
               h3('Tests'),
+              div('Cumulative and daily tests.'),
               plotOutput('total', height = plot_height),
               plotOutput('total_daily', height = plot_height)
             ),
             column(
               3,
-              h3('Cases'),
-              plotOutput('positive', height = plot_height),
-              plotOutput('positive_daily', height = plot_height)
-              # plotOutput('phase', height = plot_height)
-            ),
-            column(
-              3,
               h3('Hospitalizations'),
+              div('Cumulative and daily hospitalizations.'),
               plotOutput('hospitalized', height = plot_height),
               plotOutput('hospitalized_daily', height = plot_height)
             ),
             column(
               3,
               h3('Deaths'),
+              div('Cumulative and daily deaths.'),
               plotOutput('death', height = plot_height),
               plotOutput('death_daily', height = plot_height)
             )
@@ -163,34 +108,27 @@ ui <- fluidPage(
         tabPanel(
           'Growth Analysis',
           fluidRow(
-            # column(
-            #   3,
-            #   h3('Current Cases Pending Outcome'),
-            #   plotOutput('current', height = plot_height),
-            #   plotOutput('current_daily', height = plot_height)
-            # ),
             column(
               4,
               h3('New Cases vs Cumulative Cases'),
+              div('If a state is exhibiting exponential growth, its curve will be parallel to the red line.'),
               plotOutput('phase', height = plot_height),
               h3('Normalized Growth vs Total'),
+              div('If a state is exhibuting logistic growth, its curve will be a decreasing linear trend, and the carrying capacity of the state will be the value where the red line touches the x axis.'),
               plotOutput('growth_characteristic', height = plot_height)
             ),
             column(
               4,
               h3('Ratio of New Cases to Previous New Cases'),
+              div('A growth factor above 1 (the red line) indicates day-to-day growth in number of new cases, and a factor below 1 indicates day-to-day decrease in new cases.'),
               plotOutput('gf', height = plot_height)
             ),
             column(
               4,
               h3('Growth Factor Overview'),
+              div('A seven-day geometric average of growth factors across states.'),
               plotOutput('gf_overview', height = '600px')
             )
-            # column(
-            #   4,
-            #   h3('New Cases vs Cumulative Cases Model Estimate'),
-            #   plotOutput('phase_model', height = plot_height)
-            # )
           )
         )
       ),
@@ -271,23 +209,15 @@ server <- function(input, output, session) {
     
     df <-
       covid_data() %>% 
-      filter(positive > 50, positiveIncrease > 0)
-    
-    xrange <-
-      df %>% 
-      filter(state == input$state) %>% 
-      pull(positive) %>% 
-      range()
-    
-    yrange <-
-      df %>% 
-      filter(state == input$state) %>% 
-      pull(positiveIncrease) %>% 
-      range()
+      filter(
+        state == input$state,
+        positive > 10, 
+        positiveIncrease > 0
+      )
     
     ggplot() +
       geom_line(
-        aes(x = positive, y = positiveIncrease, group = state, alpha = state == input$state),
+        aes(x = positive, y = positiveIncrease),
         data = df
       ) +
       geom_point(
@@ -297,37 +227,23 @@ server <- function(input, output, session) {
             date == max(date)
           )
       ) +
-      geom_line(aes(x = positive, y = 0.25 * positive), data = df %>% filter(state == 'USA'), color = 'blue', linetype = 'dashed')+
+      geom_line(aes(x = positive, y = .25 * positive), data = df, color = 'red', linetype = 'dashed') +
       ggrepel::geom_text_repel(
-        aes(x = positive, y = positiveIncrease, label = state, alpha = state == input$state), 
+        aes(x = positive, y = positiveIncrease, label = state), 
         data = df %>% 
-          filter(
-            date == max(date)
-          ), 
+          filter(date == max(date)), 
         nudge_x = .4,
         nudge_y = -.4,
         size = 3
       ) +
-      scale_alpha_manual(values = c('TRUE' = 1, 'FALSE' = .1)) +
-      { if (input$logscale) scale_x_log10() else scale_x_continuous(limits = xrange) } +
-      { if (input$logscale) scale_y_log10() else scale_y_continuous(limits = yrange) } +
+      { if (input$logscale) scale_x_log10() } +
+      { if (input$logscale) scale_y_log10() } +
       theme_minimal() +
       theme(legend.position = 'none')
     
   })
   
   output$growth_characteristic <- renderPlot({
-    
-    # covid_data() %>% 
-    #   filter(state == input$state) %>% 
-    #   group_by(state) %>% 
-    #   filter(positive > .1 * max(positive)) %>% 
-    #   ungroup() %>% 
-    #   ggplot(aes(x = positive, y = positiveIncrease / positive)) +
-    #   geom_line() +
-    #   geom_hline(aes(yintercept = 0)) +
-    #   facet_wrap(~ state, scales = 'free') +
-    #   theme_minimal() 
     
     df <-
       covid_data() %>% 
@@ -337,7 +253,7 @@ server <- function(input, output, session) {
     df %>% 
       ggplot(aes(x = positive, y = positiveIncrease / positive)) +
       geom_line() +
-      stat_smooth(method = "lm", se = FALSE, fullrange = TRUE, linetype = 'dotted', color = 'green') +
+      stat_smooth(method = "lm", se = FALSE, fullrange = TRUE, linetype = 'dotted', color = 'red') +
       geom_hline(aes(yintercept = 0)) +
       xlim(0, 1.5 * max(df$positive)) +
       ylim(0, max(df$positiveIncrease / df$positive)) +
@@ -360,41 +276,6 @@ server <- function(input, output, session) {
       theme_minimal()     
     
   })
-  
-  # output$phase_model <- renderPlot({
-  #   
-  #   covid_data() %>% 
-  #     phase_model_chart(input$state)
-  #   
-  # })
-  
-  # output$current <- renderPlot({
-  #   
-  #   covid_data() %>% 
-  #     arrange(date) %>% 
-  #     group_by(state) %>% 
-  #     mutate(
-  #       current_cases = positive - death - recovered,
-  #       current_cases_increase = c(0, diff(current_cases))
-  #     ) %>% 
-  #     ungroup() %>% 
-  #     cumulative_chart(input$state, current_cases, logscale = input$logscale)
-  #   
-  # })
-  # 
-  # output$current_daily <- renderPlot({
-  #   
-  #   covid_data() %>% 
-  #     arrange(date) %>% 
-  #     group_by(state) %>% 
-  #     mutate(
-  #       current_cases = positive - death - recovered,
-  #       current_cases_increase = c(0, diff(current_cases))
-  #     ) %>% 
-  #     ungroup() %>% 
-  #     daily_chart(input$state, current_cases_increase)
-  #   
-  # })
   
   output$gf_overview <- renderPlot({
     
