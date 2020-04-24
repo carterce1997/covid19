@@ -121,7 +121,10 @@ ui <- fluidPage(
               4,
               h3('Ratio of New Cases to Previous New Cases'),
               div('A growth factor above 1 (the red line) indicates day-to-day growth in number of new cases, and a factor below 1 indicates day-to-day decrease in new cases.'),
-              plotOutput('gf', height = plot_height)
+              plotOutput('gf', height = plot_height),
+              h3('Percent of Tests that are Positive'),
+              div('Number of tests divided by number of positive cases'),
+              plotOutput('percent_positive', height = plot_height)
             ),
             column(
               4,
@@ -274,6 +277,21 @@ server <- function(input, output, session) {
       geom_hline(yintercept = 1, linetype = 'dashed', color = 'red') +
       scale_y_log10(expand = expand_scale(add = 1)) +
       theme_minimal()     
+    
+  })
+  
+  output$percent_positive <- renderPlot({
+    
+    covid_data() %>% 
+      filter(
+        state == input$state
+      ) %>% 
+      mutate(
+        percent_positive =  positiveIncrease / totalTestResultsIncrease
+      ) %>% 
+      ggplot() +
+      geom_bar(aes(x = date, y = percent_positive), stat = 'identity') +
+      theme_minimal()
     
   })
   
