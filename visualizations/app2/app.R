@@ -10,13 +10,13 @@ get_covid_data <- function() {
   
   results <-
     vroom::vroom('http://covidtracking.com/api/states/daily.csv') %>%
-    mutate(date = ymd(date)) %>%
-    replace(is.na(.), 0)
+    mutate(date = lubridate::ymd(as.character(date))) %>% 
+    mutate_if(is.numeric, function(x) replace_na(x, 0))
 
   totals <-
     results %>%
     group_by(date) %>%
-    summarize_all(function(x) if( 'numeric' %in% class(x)) sum(x) else NA) %>%
+    summarize_all(function(x) if('numeric' %in% class(x)) sum(x) else NA) %>%
     ungroup() %>%
     mutate(state = 'USA')
 
