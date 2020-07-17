@@ -1,10 +1,9 @@
 
 library(shiny)
 library(tidyverse)
-library(arm)
 library(lubridate)
-library(tidybayes)
-library(modelr)
+library(hrbrthemes)
+library(TTR)
 
 get_covid_data <- function() {
   
@@ -72,6 +71,21 @@ ui <- fluidPage(
     ),
     mainPanel(
       tabsetPanel(
+        tabPanel(
+          'Overview',
+          fluidRow(
+            column(
+              6,
+              h3('Cases'),
+              plotOutput('positive_daily_horizon', height = '700px')
+            ),
+            column(
+              6,
+              h3('Deaths'),
+              plotOutput('deaths_daily_horizon', height = '700px')
+            )
+          )
+        ),
         tabPanel(
           'State Statistics',
           fluidRow(
@@ -150,6 +164,78 @@ server <- function(input, output, session) {
       filter(date <= input$daterange[2], date >= input$daterange[1])
     
   })
+  
+  
+  output$positive_daily_horizon <- renderPlot({
+    
+    normalize <- function(x, ...) (x - min(x, ...)) / (max(x, ...) - min(x, ...))
+    
+    covid_data() %>% 
+      select(date, state, positiveIncrease) %>% 
+      filter(
+        state != 'USA',
+        positiveIncrease >= 0,
+        !is.na(positiveIncrease)
+      ) %>% 
+      arrange(date) %>% 
+      group_by(state) %>% 
+      mutate(
+        positiveIncrease = SMA(positiveIncrease, 3),
+        latest_positiveIncrease = positiveIncrease[which.max(date)]
+      ) %>% 
+      ungroup() %>% 
+      mutate(
+        state = fct_rev(fct_reorder(state, latest_positiveIncrease))
+      ) %>% 
+      ggplot() +
+      geom_horizon(aes(x = date, y = positiveIncrease), bandwidth = 1000) +
+      facet_grid(state ~ .) +
+      scale_fill_viridis_c() +
+      theme_minimal() +
+      theme(panel.spacing.y=unit(-0.05, "lines")) +
+      theme(strip.text.y = element_text(hjust=0, angle=360)) +
+      theme(axis.text.y=element_blank()) +
+      theme(aspect.ratio = 1/35) +
+      theme(panel.grid = element_blank()) +
+      theme(legend.position = 'none')
+    
+  })
+  
+  output$deaths_daily_horizon <- renderPlot({
+    
+    normalize <- function(x, ...) (x - min(x, ...)) / (max(x, ...) - min(x, ...))
+    
+    covid_data() %>% 
+      select(date, state, deathIncrease) %>% 
+      filter(
+        state != 'USA',
+        deathIncrease >= 0,
+        !is.na(deathIncrease)
+      ) %>% 
+      arrange(date) %>% 
+      group_by(state) %>% 
+      mutate(
+        deathIncrease = SMA(deathIncrease, 3),
+        latest_deathIncrease = deathIncrease[which.max(date)]
+      ) %>% 
+      ungroup() %>% 
+      mutate(
+        state = fct_rev(fct_reorder(state, latest_deathIncrease))
+      ) %>% 
+      ggplot() +
+      geom_horizon(aes(x = date, y = deathIncrease), bandwidth = 50) +
+      facet_grid(state ~ .) +
+      scale_fill_viridis_c() +
+      theme_minimal() +
+      theme(panel.spacing.y=unit(-0.05, "lines")) +
+      theme(strip.text.y = element_text(hjust=0, angle=360)) +
+      theme(axis.text.y=element_blank()) +
+      theme(aspect.ratio = 1/35) +
+      theme(panel.grid = element_blank()) +
+      theme(legend.position = 'none')
+    
+  })
+  
   
   output$total <- renderPlot({
     
