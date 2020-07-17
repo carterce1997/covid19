@@ -5,6 +5,8 @@ library(lubridate)
 library(hrbrthemes)
 library(TTR)
 
+source('geom_horizon.R')
+
 get_covid_data <- function() {
   
   results <-
@@ -77,12 +79,12 @@ ui <- fluidPage(
             column(
               6,
               h3('Cases'),
-              plotOutput('positive_daily_horizon', height = '700px')
+              plotOutput('positive_daily_horizon', height = '800px')
             ),
             column(
               6,
               h3('Deaths'),
-              plotOutput('deaths_daily_horizon', height = '700px')
+              plotOutput('deaths_daily_horizon', height = '800px')
             )
           )
         ),
