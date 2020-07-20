@@ -63,7 +63,7 @@ ui <- fluidPage(
     sidebarPanel(
       selectizeInput('state', 'State', choices = sort(unique(get_covid_data()$state)), selected = 'USA'),
       checkboxInput('logscale', 'Log Scale', value = TRUE),
-      dateRangeInput('daterange', 'Date Range', start = as.Date('2020-03-01'), end = Sys.Date()),
+      dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 90, end = Sys.Date()),
       div(HTML('Data from <a target="_blank" href="https://covidtracking.com/">covidtracking.com</a>.')),
       hr(),
       div(HTML('If you would like to participate in this project, join the discussion on Slack <a target="_blank" href="https://join.slack.com/t/covid19datadi-nrv2825/shared_invite/zt-dajqaeac-nTNwKEtzkWUwqs_Y669csw">here</a>.')),
@@ -79,12 +79,14 @@ ui <- fluidPage(
             column(
               6,
               h3('Cases'),
-              plotOutput('positive_daily_horizon', height = '800px')
+              div(HTML('A horizon chart is a way of visualizing and comparing a large number of time series at the same time. They are a way of trading "shape" for "color"; each band represents a state (labeled on the right), the shape of each band gives a rough idea of the details of the trend, and the color of the band gives an indication of the magnitude. Brighter bands mean more cases. To learn more about horizon charts, <a target="_blank" href="https://square.github.io/cubism/">click here</a>.')),
+              plotOutput('positive_daily_horizon', height = '600px')
             ),
             column(
               6,
               h3('Deaths'),
-              plotOutput('deaths_daily_horizon', height = '800px')
+              div('A horizon chart for daily deaths.'),
+              plotOutput('deaths_daily_horizon', height = '600px')
             )
           )
         ),
@@ -125,7 +127,7 @@ ui <- fluidPage(
           'Growth Analysis',
           fluidRow(
             column(
-              4,
+              6,
               h3('New Cases vs Cumulative Cases'),
               div('If a state is exhibiting exponential growth, its curve will be parallel to the red line.'),
               plotOutput('phase', height = plot_height),
@@ -134,7 +136,7 @@ ui <- fluidPage(
               plotOutput('growth_characteristic', height = plot_height)
             ),
             column(
-              4,
+              6,
               h3('Ratio of New Cases to Previous New Cases'),
               div('A growth factor above 1 (the red line) indicates day-to-day growth in number of new cases, and a factor below 1 indicates day-to-day decrease in new cases.'),
               plotOutput('gf', height = plot_height),
@@ -142,12 +144,6 @@ ui <- fluidPage(
               div('Number of tests divided by number of positive cases'),
               plotOutput('percent_positive', height = plot_height)
             ),
-            column(
-              4,
-              h3('Growth Factor Overview'),
-              div('A seven-day geometric average of growth factors across states.'),
-              plotOutput('gf_overview', height = '600px')
-            )
           )
         )
       ),
@@ -190,14 +186,13 @@ server <- function(input, output, session) {
         state = fct_rev(fct_reorder(state, latest_positiveIncrease))
       ) %>% 
       ggplot() +
-      geom_horizon(aes(x = date, y = positiveIncrease), bandwidth = 1000) +
+      geom_horizon(aes(x = date, y = positiveIncrease), bandwidth = 2000) +
       facet_grid(state ~ .) +
       scale_fill_viridis_c() +
       theme_minimal() +
       theme(panel.spacing.y=unit(-0.05, "lines")) +
       theme(strip.text.y = element_text(hjust=0, angle=360)) +
       theme(axis.text.y=element_blank()) +
-      theme(aspect.ratio = 1/35) +
       theme(panel.grid = element_blank()) +
       theme(legend.position = 'none')
     
@@ -225,14 +220,13 @@ server <- function(input, output, session) {
         state = fct_rev(fct_reorder(state, latest_deathIncrease))
       ) %>% 
       ggplot() +
-      geom_horizon(aes(x = date, y = deathIncrease), bandwidth = 50) +
+      geom_horizon(aes(x = date, y = deathIncrease), bandwidth = 100) +
       facet_grid(state ~ .) +
       scale_fill_viridis_c() +
       theme_minimal() +
       theme(panel.spacing.y=unit(-0.05, "lines")) +
       theme(strip.text.y = element_text(hjust=0, angle=360)) +
       theme(axis.text.y=element_blank()) +
-      theme(aspect.ratio = 1/35) +
       theme(panel.grid = element_blank()) +
       theme(legend.position = 'none')
     

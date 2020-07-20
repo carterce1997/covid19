@@ -5,8 +5,8 @@ account: christophercarter
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2030525
-bundleId: 3404575
+bundleId: 3404610
 url: https://christophercarter.shinyapps.io/coronavirus/
-when: 1595005480.71779
+when: 1595005963.3605
 asMultiple: FALSE
 asStatic: FALSE
