@@ -23,22 +23,6 @@ get_covid_data <- function() {
 
   return(rbind(results, totals))
   
-  # readRDS('covid_data.rds')
-  
-}
-
-cumulative_chart <- function(covid_data, state_, variable, logscale) {
-  
-  variable <-
-    enquo(variable)
-  
-  covid_data %>% 
-    filter(state == state_) %>% 
-    ggplot() +
-    geom_line(aes(x = date, y = !!variable)) +
-    { if (logscale) scale_y_log10() } +
-    theme_minimal()
-  
 }
 
 daily_chart <- function(covid_data, state_, variable) {
@@ -47,14 +31,76 @@ daily_chart <- function(covid_data, state_, variable) {
     enquo(variable)
   
   covid_data %>% 
-    filter(state == state_) %>% 
+    filter(
+      state == state_,
+      !!variable >= 0
+    ) %>% 
     ggplot() +
     geom_bar(aes(x = date, y = !!variable), stat = 'identity') +
     theme_minimal()
   
 }
 
+horizon_chart <- function(.data, variable, order_by, normalized = FALSE, bands = 3, smoothwidth = 3) {
+  
+  variable <-
+    enquo(variable)
+  
+  normalize <- function(x, ...) (x - min(x, ...)) / (max(x, ...) - min(x, ...))
+  
+  get_bandwidth <- function(x, bands, ...) (max(x, ...) - min(x, ...)) / bands
+    
+  plot_df <-
+    .data %>% 
+    filter(
+      state != 'USA',
+      !!variable >= 0,
+      !is.na(!!variable)
+    ) %>% 
+    mutate(
+      variable = !!variable,
+      order_by_ = case_when(
+        order_by == 'Cases' ~ positiveIncrease,
+        order_by == 'Hospitalizations' ~ hospitalizedIncrease,
+        order_by == 'Deaths' ~ deathIncrease
+      )
+    ) %>% 
+    arrange(date) %>% 
+    group_by(state) %>% 
+    mutate(
+      smoothed = SMA(variable, smoothwidth),
+      smoothed_order_by_ = SMA(order_by_, smoothwidth),
+      latest = smoothed_order_by_[which.max(date)]
+    ) %>% 
+    { if (normalized) mutate(., smoothed = normalize(smoothed, na.rm = TRUE)) else . } %>% 
+    ungroup() %>% 
+    mutate(
+      state = fct_rev(fct_reorder(state, latest))
+    ) 
+  
+  bandwidth <-
+    get_bandwidth(plot_df$smoothed, bands, na.rm = TRUE)
+
+  plot_df %>% 
+    ggplot() +
+    geom_horizon(aes(x = date, y = smoothed), bandwidth = bandwidth) +
+    facet_grid(state ~ .) +
+    scale_fill_gradient(low = 'lightblue', high = 'blue') +
+    theme_minimal() +
+    theme(
+      panel.spacing.y = unit(-0.05, "lines"),
+      strip.text.y = element_text(hjust=0, angle=360),
+      axis.text.y = element_blank(),
+      panel.grid = element_blank(), 
+      axis.title = element_blank(),
+      legend.position = 'none'
+    )
+  
+}
+
 plot_height <- '300px'
+
+horizon_height <- '1200px'
 
 ui <- fluidPage(
   tags$head(includeHTML(("google-analytics.html"))),
@@ -63,7 +109,11 @@ ui <- fluidPage(
     sidebarPanel(
       selectizeInput('state', 'State', choices = sort(unique(get_covid_data()$state)), selected = 'USA'),
       checkboxInput('logscale', 'Log Scale', value = TRUE),
-      dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 90, end = Sys.Date()),
+      dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 150, end = Sys.Date()),
+      radioButtons('order_by', 'Order By', choices = c('Cases', 'Hospitalizations', 'Deaths')),
+      sliderInput('horizon_bands', 'Number of Horizon Bands', min = 2, max = 20, value = 5),
+      sliderInput('horizon_sma_period', 'Horizon SMA Period', min = 1, max = 7, value = 3),
+      checkboxInput('horizon_normalize', 'Normalize Horizon Charts (Each State on a Different Scale)', value = FALSE),
       div(HTML('Data from <a target="_blank" href="https://covidtracking.com/">covidtracking.com</a>.')),
       hr(),
       div(HTML('If you would like to participate in this project, join the discussion on Slack <a target="_blank" href="https://join.slack.com/t/covid19datadi-nrv2825/shared_invite/zt-dajqaeac-nTNwKEtzkWUwqs_Y669csw">here</a>.')),
@@ -77,73 +127,60 @@ ui <- fluidPage(
           'Overview',
           fluidRow(
             column(
-              6,
+              12,
+              div(HTML('A horizon chart is a way of visualizing and comparing a large number of time series at the same time. They are a way of trading "shape" for "color"; each band represents a state (labeled on the right), the shape of each band gives a rough idea of the details of the trend, and the color of the band gives an indication of the magnitude. Darker bands mean more cases. To learn more about horizon charts, <a target="_blank" href="https://square.github.io/cubism/">click here</a>.'))
+            )
+          ),
+          fluidRow(
+            column(
+              4,
               h3('Cases'),
-              div(HTML('A horizon chart is a way of visualizing and comparing a large number of time series at the same time. They are a way of trading "shape" for "color"; each band represents a state (labeled on the right), the shape of each band gives a rough idea of the details of the trend, and the color of the band gives an indication of the magnitude. Brighter bands mean more cases. To learn more about horizon charts, <a target="_blank" href="https://square.github.io/cubism/">click here</a>.')),
-              plotOutput('positive_daily_horizon', height = '600px')
+              plotOutput('positive_daily_horizon', height = horizon_height)
             ),
             column(
-              6,
+              4,
               h3('Deaths'),
-              div('A horizon chart for daily deaths.'),
-              plotOutput('deaths_daily_horizon', height = '600px')
+              plotOutput('deaths_daily_horizon', height = horizon_height)
+            ),
+            column(
+              4,
+              h3('Hospitalizations'),
+              plotOutput('hospitalizations_daily_horizon', height = horizon_height)
             )
           )
         ),
         tabPanel(
-          'State Statistics',
+          'Detail',
           fluidRow(
             column(
-              3,
+              4,
               h3('Cases'),
-              div('Cumulative and daily positive cases.'),
-              plotOutput('positive', height = plot_height),
-              plotOutput('positive_daily', height = plot_height)
-            ),
-            column(
-              3,
+              div('Daily positive cases.'),
+              # plotOutput('positive', height = plot_height),
+              plotOutput('positive_daily', height = plot_height),
               h3('Tests'),
-              div('Cumulative and daily tests.'),
-              plotOutput('total', height = plot_height),
+              div('Daily tests.'),
+              # plotOutput('total', height = plot_height),
               plotOutput('total_daily', height = plot_height)
             ),
             column(
-              3,
+              4,
               h3('Hospitalizations'),
-              div('Cumulative and daily hospitalizations.'),
-              plotOutput('hospitalized', height = plot_height),
-              plotOutput('hospitalized_daily', height = plot_height)
-            ),
-            column(
-              3,
+              div('Daily hospitalizations.'),
+              # plotOutput('hospitalized', height = plot_height),
+              plotOutput('hospitalized_daily', height = plot_height),
               h3('Deaths'),
-              div('Cumulative and daily deaths.'),
-              plotOutput('death', height = plot_height),
+              div('Daily deaths.'),
+              # plotOutput('death', height = plot_height),
               plotOutput('death_daily', height = plot_height)
-            )
-          )
-        ),
-        tabPanel(
-          'Growth Analysis',
-          fluidRow(
-            column(
-              6,
-              h3('New Cases vs Cumulative Cases'),
-              div('If a state is exhibiting exponential growth, its curve will be parallel to the red line.'),
-              plotOutput('phase', height = plot_height),
-              h3('Normalized Growth vs Total'),
-              div('If a state is exhibuting logistic growth, its curve will be a decreasing linear trend, and the carrying capacity of the state will be the value where the red line touches the x axis.'),
-              plotOutput('growth_characteristic', height = plot_height)
             ),
             column(
-              6,
-              h3('Ratio of New Cases to Previous New Cases'),
-              div('A growth factor above 1 (the red line) indicates day-to-day growth in number of new cases, and a factor below 1 indicates day-to-day decrease in new cases.'),
-              plotOutput('gf', height = plot_height),
+              4,
               h3('Percent of Tests that are Positive'),
               div('Number of tests divided by number of positive cases'),
               plotOutput('percent_positive', height = plot_height)
-            ),
+              
+            )
           )
         )
       ),
@@ -166,69 +203,22 @@ server <- function(input, output, session) {
   
   output$positive_daily_horizon <- renderPlot({
     
-    normalize <- function(x, ...) (x - min(x, ...)) / (max(x, ...) - min(x, ...))
+    covid_data() %>% 
+      horizon_chart(positiveIncrease, order_by = input$order_by, normalized = input$horizon_normalize, bands = input$horizon_bands, smoothwidth = input$horizon_sma_period)
+    
+  })
+  
+  output$hospitalizations_daily_horizon <- renderPlot({
     
     covid_data() %>% 
-      select(date, state, positiveIncrease) %>% 
-      filter(
-        state != 'USA',
-        positiveIncrease >= 0,
-        !is.na(positiveIncrease)
-      ) %>% 
-      arrange(date) %>% 
-      group_by(state) %>% 
-      mutate(
-        positiveIncrease = SMA(positiveIncrease, 3),
-        latest_positiveIncrease = positiveIncrease[which.max(date)]
-      ) %>% 
-      ungroup() %>% 
-      mutate(
-        state = fct_rev(fct_reorder(state, latest_positiveIncrease))
-      ) %>% 
-      ggplot() +
-      geom_horizon(aes(x = date, y = positiveIncrease), bandwidth = 2000) +
-      facet_grid(state ~ .) +
-      scale_fill_viridis_c() +
-      theme_minimal() +
-      theme(panel.spacing.y=unit(-0.05, "lines")) +
-      theme(strip.text.y = element_text(hjust=0, angle=360)) +
-      theme(axis.text.y=element_blank()) +
-      theme(panel.grid = element_blank()) +
-      theme(legend.position = 'none')
+      horizon_chart(hospitalizedIncrease, order_by = input$order_by, normalized = input$horizon_normalize, bands = input$horizon_bands, smoothwidth = input$horizon_sma_period)
     
   })
   
   output$deaths_daily_horizon <- renderPlot({
     
-    normalize <- function(x, ...) (x - min(x, ...)) / (max(x, ...) - min(x, ...))
-    
     covid_data() %>% 
-      select(date, state, deathIncrease) %>% 
-      filter(
-        state != 'USA',
-        deathIncrease >= 0,
-        !is.na(deathIncrease)
-      ) %>% 
-      arrange(date) %>% 
-      group_by(state) %>% 
-      mutate(
-        deathIncrease = SMA(deathIncrease, 3),
-        latest_deathIncrease = deathIncrease[which.max(date)]
-      ) %>% 
-      ungroup() %>% 
-      mutate(
-        state = fct_rev(fct_reorder(state, latest_deathIncrease))
-      ) %>% 
-      ggplot() +
-      geom_horizon(aes(x = date, y = deathIncrease), bandwidth = 100) +
-      facet_grid(state ~ .) +
-      scale_fill_viridis_c() +
-      theme_minimal() +
-      theme(panel.spacing.y=unit(-0.05, "lines")) +
-      theme(strip.text.y = element_text(hjust=0, angle=360)) +
-      theme(axis.text.y=element_blank()) +
-      theme(panel.grid = element_blank()) +
-      theme(legend.position = 'none')
+      horizon_chart(deathIncrease,  order_by = input$order_by, normalized = input$horizon_normalize, bands = input$horizon_bands, smoothwidth = input$horizon_sma_period)
     
   })
   
@@ -374,28 +364,6 @@ server <- function(input, output, session) {
       ggplot() +
       geom_bar(aes(x = date, y = percent_positive), stat = 'identity') +
       theme_minimal()
-    
-  })
-  
-  output$gf_overview <- renderPlot({
-    
-    covid_data() %>% 
-      arrange(date) %>% 
-      group_by(state) %>% 
-      filter(positiveIncrease > 0) %>% 
-      mutate(growth_factor = positiveIncrease / lag(positiveIncrease)) %>% 
-      slice(max(n() - 7, 1):n()) %>% 
-      summarize(seven_day_growth_factor = exp(mean(log(growth_factor)))) %>% 
-      ungroup() %>% 
-      mutate(state = fct_reorder(state, seven_day_growth_factor)) %>% 
-      ggplot(aes(x = seven_day_growth_factor, xend = 1, y = state, yend = state, alpha = state == input$state)) +
-      geom_point() +
-      geom_segment() +
-      scale_alpha_manual(values = c('TRUE' = 1, 'FALSE' = .2)) +
-      geom_vline(xintercept = 1, linetype = 'dashed', color = 'red') + 
-      theme_minimal() +
-      theme(legend.position = 'none')
-    
     
   })
   
