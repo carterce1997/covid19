@@ -36,7 +36,7 @@ daily_chart <- function(covid_data, state_, variable) {
       !!variable >= 0
     ) %>% 
     ggplot() +
-    geom_bar(aes(x = date, y = !!variable), stat = 'identity') +
+    geom_line(aes(x = date, y = !!variable)) +
     theme_minimal()
   
 }
@@ -109,7 +109,7 @@ ui <- fluidPage(
     sidebarPanel(
       selectizeInput('state', 'State', choices = sort(unique(get_covid_data()$state)), selected = 'USA'),
       checkboxInput('logscale', 'Log Scale', value = TRUE),
-      dateRangeInput('daterange', 'Date Range', start = Sys.Date() - 150, end = Sys.Date()),
+      dateRangeInput('daterange', 'Date Range', start = as.Date('2020-02-01'), end = Sys.Date()),
       radioButtons('order_by', 'Order By', choices = c('Cases', 'Hospitalizations', 'Deaths')),
       sliderInput('horizon_bands', 'Number of Horizon Bands', min = 2, max = 20, value = 5),
       sliderInput('horizon_sma_period', 'Horizon SMA Period', min = 1, max = 7, value = 3),
@@ -362,7 +362,7 @@ server <- function(input, output, session) {
         percent_positive =  positiveIncrease / totalTestResultsIncrease
       ) %>% 
       ggplot() +
-      geom_bar(aes(x = date, y = percent_positive), stat = 'identity') +
+      geom_line(aes(x = date, y = percent_positive)) +
       theme_minimal()
     
   })
